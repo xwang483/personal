@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>迪士尼日报 · 上海迪士尼乐园特刊</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Ma+Shan+Zheng&family=Noto+Serif+SC:wght@400;600;900&family=ZCOOL+XiaoWei&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#f3ead7; --ink:#2b1d12; --ink-soft:#4a3a2c; --rule:#3a2a1c; --muted:#7a6650;
+    --serif:"Noto Serif SC","Noto Serif CJK SC","Source Han Serif SC","Songti SC","STSong","SimSun",serif;
+    --display:"Ma Shan Zheng","ZCOOL XiaoWei","STKaiti","KaiTi","Kaiti SC","Noto Serif SC","Noto Serif CJK SC",serif;
+    --label:"ZCOOL XiaoWei","Noto Serif SC","Noto Serif CJK SC",serif;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;background:var(--paper);color:var(--ink)}
+  body{font-family:var(--serif);line-height:1.75;font-size:16px;-webkit-font-smoothing:antialiased}
+  .paper{max-width:1180px;margin:0 auto;padding:28px 36px 48px}
+
+  /* Masthead */
+  .ears{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;font-size:12px;color:var(--ink-soft);letter-spacing:.08em}
+  .ears .box{border:1px solid var(--rule);padding:6px 10px;max-width:190px;line-height:1.5;text-align:center}
+  .masthead{text-align:center;margin:6px 0 0}
+  .masthead h1{font-family:var(--display);font-weight:400;font-size:clamp(64px,11vw,140px);line-height:1;margin:0;letter-spacing:.06em;
+    text-shadow:1px 1px 0 rgba(43,29,18,.18)}
+  .masthead h1 .star{font-size:.38em;vertical-align:middle;margin:0 .25em;letter-spacing:0}
+  .subhead{font-size:14px;letter-spacing:.5em;color:var(--ink-soft);margin:10px 0 12px;padding-left:.5em}
+  .meta{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 18px;border-top:3px double var(--rule);border-bottom:1px solid var(--rule);
+    padding:6px 2px;font-size:13px;letter-spacing:.12em}
+  nav.sections{display:flex;justify-content:center;flex-wrap:wrap;gap:4px 0;border-bottom:3px double var(--rule);padding:6px 0;margin-bottom:22px}
+  nav.sections span{font-family:var(--label);font-size:14px;letter-spacing:.3em;padding:0 16px;border-right:1px solid var(--rule)}
+  nav.sections span:last-of-type{border-right:0}
+
+  /* Grid */
+  .grid{display:grid;grid-template-columns:2.1fr 1fr;gap:0}
+  .lead{padding-right:26px;border-right:1px solid var(--rule)}
+  .side{padding-left:26px}
+  .kicker{font-family:var(--label);font-size:13px;letter-spacing:.35em;color:var(--muted);margin:0 0 4px}
+  h2{font-weight:900;line-height:1.22;margin:0 0 10px;letter-spacing:.02em}
+  .lead h2{font-size:clamp(30px,4.2vw,50px)}
+  .side h2{font-size:26px}
+  h3{font-weight:900;font-size:20px;line-height:1.3;margin:0 0 6px}
+  .deck{font-size:17px;font-style:italic;color:var(--ink-soft);border-bottom:1px solid var(--rule);padding-bottom:10px;margin:0 0 14px}
+  .byline{font-size:12px;letter-spacing:.2em;color:var(--muted);margin:0 0 10px}
+  p{margin:0 0 .9em;text-align:justify}
+  .cols2{column-count:2;column-gap:26px;column-rule:1px solid rgba(58,42,28,.5)}
+  .dropcap::first-letter{float:left;font-family:var(--display);font-size:3.4em;line-height:.9;padding:6px 8px 0 0}
+  blockquote{margin:14px 0;padding:10px 14px;border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);font-weight:600;font-size:17px;line-height:1.6;text-align:center}
+  blockquote small{display:block;font-weight:400;font-size:12px;letter-spacing:.15em;color:var(--muted);margin-top:4px;font-style:italic}
+
+  /* Living photographs */
+  figure{margin:0 0 16px}
+  .frame{position:relative;border:1px solid var(--rule);padding:5px;background:#e9dfc8;cursor:pointer}
+  .frame video{display:block;width:100%;height:auto;background:#1c140d;
+    filter:grayscale(100%) sepia(18%) contrast(1.05);transition:filter .6s ease}
+  .frame:hover video,.frame.color video{filter:grayscale(0%) sepia(0%) contrast(1)}
+  .frame .pill{position:absolute;top:14px;right:14px;background:rgba(20,14,9,.55);color:#f3ead7;font-family:ui-monospace,Menlo,Consolas,monospace;
+    font-size:11px;letter-spacing:.08em;padding:2px 8px;border-radius:999px;pointer-events:none}
+  .frame .hint{position:absolute;left:14px;bottom:14px;background:rgba(243,234,215,.82);color:var(--ink);font-size:11px;letter-spacing:.15em;padding:2px 8px;
+    pointer-events:none;transition:opacity .6s}
+  .frame:hover .hint,.frame.color .hint{opacity:0}
+  figcaption{font-style:italic;font-size:13px;line-height:1.6;color:var(--ink-soft);margin-top:6px;text-align:center}
+  .portrait{max-width:330px;margin-left:auto;margin-right:auto}
+
+  /* Lower deck */
+  .lower{display:grid;grid-template-columns:repeat(3,1fr);border-top:3px double var(--rule);margin-top:22px;padding-top:16px}
+  .lower article{padding:0 22px;border-right:1px solid var(--rule)}
+  .lower article:first-child{padding-left:0}
+  .lower article:last-child{border-right:0;padding-right:0}
+  .lower p{font-size:15px}
+  .notice{border:2px solid var(--rule);outline:1px solid var(--rule);outline-offset:3px;padding:12px 14px;text-align:center;margin:6px 4px}
+  .notice h3{letter-spacing:.3em}
+  .weather{display:flex;gap:12px;align-items:center;font-size:14px}
+  .weather .big{font-family:var(--display);font-size:46px;line-height:1}
+  .rule-thin{border:0;border-top:1px solid var(--rule);margin:14px 0}
+
+  footer{border-top:3px double var(--rule);margin-top:24px;padding-top:8px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;font-size:12px;color:var(--muted);letter-spacing:.12em}
+
+  /* Sound toggle */
+  nav.sections{position:relative}
+  .sound{position:absolute;right:0;top:50%;transform:translateY(-50%);z-index:10;font-size:12px !important;padding:4px 10px !important;font-family:var(--label);font-size:13px;letter-spacing:.25em;background:var(--paper);color:var(--ink);
+    border:1px solid var(--rule);outline:1px solid var(--rule);outline-offset:2px;padding:8px 14px;cursor:pointer;box-shadow:0 2px 8px rgba(43,29,18,.15)}
+  .sound[aria-pressed="true"]{background:var(--ink);color:var(--paper)}
+
+  @media (max-width:860px){
+    .paper{padding:18px 16px 80px}
+    .ears{display:none}
+    .grid{grid-template-columns:1fr}
+    .lead{padding-right:0;border-right:0;border-bottom:1px solid var(--rule);padding-bottom:12px;margin-bottom:16px}
+    .side{padding-left:0}
+    .cols2{column-count:1}
+    .lower{grid-template-columns:1fr}
+    .lower article{padding:0 0 14px;border-right:0;border-bottom:1px solid var(--rule);margin-bottom:14px}
+    .lower article:last-child{border-bottom:0}
+    .subhead{letter-spacing:.25em;font-size:12px}
+    .meta{justify-content:center;font-size:12px;letter-spacing:.06em}
+    nav.sections span{padding:0 9px;font-size:13px;letter-spacing:.15em}
+    .portrait{max-width:300px}
+    .masthead h1{font-size:clamp(44px,14.5vw,72px);letter-spacing:.02em}
+    .masthead h1 .star{font-size:.32em;margin:0 .12em}
+    nav.sections{position:static}
+    nav.sections span{padding:0 7px;font-size:12px;letter-spacing:.08em}
+    .sound{position:fixed;top:auto;transform:none;right:12px;bottom:14px;font-size:12px;letter-spacing:.15em;padding:6px 10px !important}
+  }
+</style>
+</head>
+<body>
+<div class="paper">
+
+  <div class="ears">
+    <div class="box">本报今日<br>出现城堡一座 · 达菲熊一只</div>
+    <div class="box">号外！号外！<br>四人小队明日再度出征</div>
+  </div>
+
+  <header class="masthead">
+    <h1><span class="star">✦</span>迪士尼日报<span class="star">✦</span></h1>
+    <div class="subhead">乐园里最会动的报纸 · 每张照片都会挥手</div>
+    <div class="meta">
+      <span>第 001 期</span>
+      <span>2026年10月26日 星期一 · 上海迪士尼乐园特刊</span>
+      <span>售价：一根米奇冰淇淋</span>
+    </div>
+  </header>
+
+  <nav class="sections" aria-label="栏目">
+    <span>头版</span><span>城堡要闻</span><span>矿山快讯</span><span>天气</span><span>寻物启事</span><span>读者来信</span>
+    <button class="sound" type="button" aria-pressed="false">开启声音 · SOUND ON</button>
+  </nav>
+
+  <main class="grid">
+    <article class="lead">
+      <p class="kicker">头版 · 城堡要闻</p>
+      <h2>城堡亮灯，四位勇士宣布：明天还要来</h2>
+      <p class="deck">奇幻童话城堡前，四人小队与达菲熊完成夜间合影；目击者称，挥手持续时间远超预期。</p>
+      <figure>
+        <div class="frame" tabindex="0">
+          <video autoplay loop muted playsinline preload="auto" poster="castle-loop-poster.jpg"
+                 src="castle-loop.mp4" data-sound="castle-loop-sound.mp4"></video>
+          <span class="pill">00:04</span>
+          <span class="hint">悬停 / 轻点 显色</span>
+        </div>
+        <figcaption>本报特约摄影：夜色中的城堡前，四位女士一边以为自己在拍照，一边被告知「这是录像」。图为众人得知真相后的集体挥手。</figcaption>
+      </figure>
+      <div class="cols2">
+        <p class="dropcap">本报讯　昨夜，上海迪士尼乐园奇幻童话城堡准时亮起粉紫色灯光。就在此时，一支由四位女士和一只达菲熊组成的小队在城堡正前方完成集结，并举起手机，摆出了一个看起来非常像拍照的姿势。</p>
+        <p>据现场人士透露，事情的转折发生在一句「说句话吧，这是录像」之后。原本静止的笑容迅速升级为挥手、比耶和此起彼伏的「嗨，好开心哦」。其中一位戴着魔法帽发箍的成员表现尤为积极，其手臂挥动幅度被本报记者形容为「足以召唤一场烟花」。</p>
+        <blockquote>「好美。」<small>—— 一位不愿透露姓名的米妮发箍佩戴者，望向城堡时如是说</small></blockquote>
+        <p>达菲熊全程保持职业微笑，未发表任何评论。本报试图采访，它只是安静地坐在主人怀里，看上去对今晚的灯光十分满意。</p>
+        <p>录像结尾，小队成员郑重宣布：「明天见咯，明天还要来。」乐园方面暂未回应是否会为此加开一场烟花。本报将持续关注四位勇士的后续行程。</p>
+      </div>
+    </article>
+
+    <aside class="side">
+      <p class="kicker">矿山快讯</p>
+      <h2>矿车即将出发，后排乘客双手高举表示「准备好了」</h2>
+      <p class="byline">本报矿山特派记者　发自七个小矮人矿山车</p>
+      <figure class="portrait">
+        <div class="frame" tabindex="0">
+          <video autoplay loop muted playsinline preload="auto" poster="minecar-loop-poster.jpg"
+                 src="minecar-loop.mp4" data-sound="minecar-loop-sound.mp4"></video>
+          <span class="pill">00:04</span>
+          <span class="hint">悬停 / 轻点 显色</span>
+        </div>
+        <figcaption>矿车上的四人小队：前排保持镇定，后排已经开始欢呼。专家指出，这是过山车前最标准的「我不怕」表情。</figcaption>
+      </figure>
+      <p>本报讯　矿车尚未启动，车厢里的气氛已率先冲顶。后排两位乘客高举双臂欢呼，前排乘客则对着镜头比出胜利手势，神情从容，仿佛早已看过结局。</p>
+      <blockquote>“Please remain seated with your backpacks, hands, arms, feet, and legs inside the mine car.”<small>—— 矿山广播，当日重复多次</small></blockquote>
+      <p>本报翻译如下：请坐好，背包、手、手臂、脚和腿都请留在矿车里。对此，后排乘客表示：手臂刚刚只是「短暂出差」，矿车一开就回来。</p>
+      <p>七个小矮人未对乘客的举手行为发表意见，据称正忙于在矿洞里挖宝石。</p>
+    </aside>
+  </main>
+
+  <section class="lower">
+    <article>
+      <p class="kicker">天气</p>
+      <h3>夜晚晴朗，适合许愿</h3>
+      <div class="weather"><span class="big">☾</span><span>城堡上空：晴<br>许愿成功率：高<br>风力：刚好吹起米奇耳朵</span></div>
+      <hr class="rule-thin">
+      <p>气象部门提醒：明日预计依然适合重返乐园，请市民提前准备好舒服的鞋、充满电的手机和一颗不想回家的心。</p>
+    </article>
+    <article>
+      <div class="notice">
+        <p class="kicker">寻物启事</p>
+        <h3>寻：达菲熊一只</h3>
+        <p style="text-align:center">特征：棕色，圆耳朵，笑容稳定，擅长出镜。最后一次被目击于城堡前合影的正中间。</p>
+        <p style="text-align:center;margin:0">如有拾到，请勿归还——<br>它说它也想明天再来。</p>
+      </div>
+    </article>
+    <article>
+      <p class="kicker">读者来信</p>
+      <h3>「为什么报纸上的人会动？」</h3>
+      <p>编辑部答：本报所有照片均采用乐园特供显影术，平时是黑白，你一靠近，它们就会想起当晚的颜色。请把鼠标移到照片上，或在手机上轻点一下试试。</p>
+      <p style="font-size:13px;color:var(--muted);font-style:italic">本报温馨提示：点击「开启声音」按钮后再悬停或轻点照片，可收听现场原声。</p>
+    </article>
+  </section>
+
+  <footer>
+    <span>《迪士尼日报》编辑部 · 城堡前广场 1 号</span>
+    <span>本期全部照片均为读者亲手录制</span>
+    <span>明天见咯 ✦</span>
+  </footer>
+</div>
+
+<script>
+(function(){
+  var frames=[].slice.call(document.querySelectorAll('.frame'));
+  var soundBtn=document.querySelector('.sound');
+  var soundOn=false, active=null;
+  var touch=window.matchMedia('(hover: none)').matches;
+
+  function swap(v,src,muted){
+    if(v.getAttribute('src')===src){v.muted=muted;return;}
+    var t=v.currentTime||0;
+    v.setAttribute('src',src); v.muted=muted;
+    v.addEventListener('loadedmetadata',function h(){v.removeEventListener('loadedmetadata',h);
+      try{v.currentTime=t%(v.duration||4);}catch(e){} var p=v.play(); if(p&&p.catch)p.catch(function(){});});
+    v.load();
+  }
+  function silent(v){ if(!v.dataset.silent) v.dataset.silent=v.getAttribute('src'); swap(v,v.dataset.silent,true); }
+  function loud(v){ if(!v.dataset.silent) v.dataset.silent=v.getAttribute('src'); swap(v,v.dataset.sound,false); }
+  function setActive(f){
+    if(active&&active!==f){ active.classList.remove('color'); silent(active.querySelector('video')); }
+    active=f;
+    if(f){ f.classList.add('color'); if(soundOn) loud(f.querySelector('video')); }
+  }
+
+  frames.forEach(function(f){
+    var v=f.querySelector('video');
+    var p=v.play(); if(p&&p.catch)p.catch(function(){});
+    f.addEventListener('mouseenter',function(){ if(!touch) setActive(f); });
+    f.addEventListener('mouseleave',function(){ if(!touch && active===f){ f.classList.remove('color'); silent(v); active=null; } });
+    f.addEventListener('click',function(){
+      if(active===f && touch){ f.classList.remove('color'); silent(v); active=null; } else setActive(f);
+    });
+    f.addEventListener('keydown',function(e){ if(e.key==='Enter'||e.key===' '){ e.preventDefault(); f.click(); } });
+  });
+
+  soundBtn.addEventListener('click',function(){
+    soundOn=!soundOn;
+    soundBtn.setAttribute('aria-pressed',String(soundOn));
+    soundBtn.textContent=soundOn?'关闭声音 · SOUND OFF':'开启声音 · SOUND ON';
+    if(active){ var v=active.querySelector('video'); soundOn?loud(v):silent(v); }
+  });
+})();
+</script>
+</body>
+</html>
