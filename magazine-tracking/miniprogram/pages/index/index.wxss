@@ -1,0 +1,179 @@
+.page {
+  padding: 20px 16px 32px;
+  background: #ffffff;
+}
+
+.title {
+  display: block;
+  margin: 0;
+  color: #1a1a1a;
+  font-size: 22px;
+  font-weight: 650;
+  line-height: 1.35;
+}
+
+@media (min-width: 400px) {
+  .title {
+    font-size: 26px;
+  }
+}
+
+@media (min-width: 600px) {
+  .title {
+    font-size: 30px;
+  }
+}
+
+.disclaimer,
+.hint,
+.fine,
+.meta,
+.panel-copy,
+.privacy-copy {
+  display: block;
+  color: #333333;
+  font-size: 16px;
+  line-height: 1.5;
+}
+
+.disclaimer {
+  margin-top: 8px;
+}
+
+.privacy {
+  margin-bottom: 16px;
+  padding: 16px;
+  border: 1px solid #e60012;
+  background: #ffffff;
+}
+
+.privacy-title,
+.panel-title,
+.result-head,
+.card-title {
+  display: block;
+  color: #1a1a1a;
+  font-size: 18px;
+  font-weight: 650;
+  line-height: 1.4;
+}
+
+.privacy-copy,
+.panel-copy {
+  margin-top: 8px;
+}
+
+.form,
+.panel,
+.card {
+  margin-top: 16px;
+}
+
+.label,
+.fine {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 650;
+}
+
+.field {
+  box-sizing: border-box;
+  width: 100%;
+  height: 44px;
+  padding: 0 12px;
+  border: 1px solid #cccccc;
+  background: #ffffff;
+  color: #1a1a1a;
+  font-size: 16px;
+}
+
+.hint,
+.fine,
+.meta {
+  margin-top: 8px;
+}
+
+.error,
+.notice,
+.ok {
+  display: block;
+  margin-top: 8px;
+  color: #e60012;
+  font-size: 16px;
+  font-weight: 650;
+  line-height: 1.5;
+}
+
+.btn {
+  min-height: 44px;
+  border-radius: 4px;
+}
+
+.btn.primary {
+  background: #e60012;
+  color: #ffffff;
+}
+
+.btn.ghost {
+  background: #ffffff;
+  color: #e60012;
+  border: 1px solid #e60012;
+}
+
+.btn[disabled] {
+  opacity: 0.55;
+}
+
+.block {
+  width: 100%;
+  margin-top: 12px;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.row .btn {
+  flex: 1 1 140px;
+}
+
+.panel,
+.card,
+.banner {
+  padding: 16px;
+  border: 1px solid #e6e6e6;
+  background: #ffffff;
+}
+
+.panel.bad,
+.banner {
+  border-color: #e60012;
+}
+
+.banner {
+  margin-top: 16px;
+  color: #e60012;
+  font-size: 16px;
+}
+
+.stamp {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 2px 6px;
+  border: 1px solid #e60012;
+  color: #e60012;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+}
+
+.tracking {
+  display: block;
+  margin-top: 4px;
+  color: #1a1a1a;
+  font-size: 18px;
+  line-height: 1.4;
+  word-break: break-all;
+}

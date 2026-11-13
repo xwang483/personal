@@ -1,0 +1,19 @@
+page {
+  background: #ffffff;
+  color: #1a1a1a;
+  font-size: 16px;
+  line-height: 1.5;
+  font-family: -apple-system, "PingFang SC", "Noto Sans SC", "Microsoft YaHei", sans-serif;
+}
+
+button {
+  margin: 0;
+  padding: 0 16px;
+  font-size: 16px;
+  line-height: 44px;
+  min-height: 44px;
+}
+
+button::after {
+  border: none;
+}

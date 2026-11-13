@@ -1,0 +1,9 @@
+{
+  "desc": "查询页允许被索引。上架前请再按主体审核要求确认。",
+  "rules": [
+    {
+      "action": "allow",
+      "page": "pages/index/index"
+    }
+  ]
+}

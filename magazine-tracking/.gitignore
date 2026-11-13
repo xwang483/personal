@@ -43,3 +43,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local WeChat devtools AppID; the shared project.config.json stays empty
+/miniprogram/project.private.config.json
