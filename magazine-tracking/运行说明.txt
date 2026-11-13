@@ -1,0 +1,21 @@
+刊邮：在自己的电脑上运行
+
+这是完整网站的源码，不是已经部署好的网址。压缩包里没有密钥、没有数据库、没有 node_modules。
+
+需要 Node.js 22。
+
+1. 解压。
+2. 把 .env.example 复制为 .env.local。
+3. 自己填写三个空项，不要使用任何示例密码：
+   ADMIN_USERNAME
+   ADMIN_PASSWORD（至少 8 位）
+   ADMIN_SESSION_SECRET（至少 32 位。可运行 openssl rand -base64 32）
+4. 在解压后的目录执行：
+   npm install
+   npm run dev
+5. 打开终端里显示的本机地址，通常是 http://localhost:3000。
+6. 打开 /admin 登录。下载「虚构示例 CSV」，确认后再导入。
+   然后在首页查询虚构号码 13800001111 或 13900002222。
+
+不想安装 Node 时，用浏览器打开同目录的「离线演示.html」。
+那一页只是写在文件里的虚构数据，不能登录，也不能导入。

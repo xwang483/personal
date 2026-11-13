@@ -1,0 +1,35 @@
+{
+  "miniprogramRoot": "./",
+  "projectname": "magazine-lookup",
+  "description": "杂志邮寄单号查询。appid 目前是微信开发者工具的测试占位 touristappid，只能本地预览。上传发布前必须换成你在微信公众平台（mp.weixin.qq.com）注册的小程序 AppID。不要把 AppSecret 写进这个文件。",
+  "appid": "touristappid",
+  "compileType": "miniprogram",
+  "libVersion": "3.5.5",
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "enhance": true,
+    "postcss": true,
+    "minified": true,
+    "uploadWithSourceMap": true,
+    "minifyWXSS": true,
+    "minifyWXML": true,
+    "babelSetting": {
+      "ignore": [],
+      "disablePlugins": [],
+      "outputPath": ""
+    }
+  },
+  "packOptions": {
+    "ignore": [
+      { "type": "folder", "value": "node_modules" },
+      { "type": "suffix", "value": ".md" }
+    ],
+    "include": []
+  },
+  "editorSetting": {
+    "tabIndent": "insertSpaces",
+    "tabSize": 2
+  },
+  "condition": {}
+}

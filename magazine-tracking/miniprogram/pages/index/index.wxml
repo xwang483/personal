@@ -1,0 +1,127 @@
+<view class="page">
+  <view class="privacy" wx:if="{{showPrivacy}}">
+    <text class="privacy-title">查询前请先了解这两件事</text>
+    <text class="privacy-copy">验证手机号后才能查看该号码自己的单号。可以用微信手机号组件，或收取短信验证码。手机号由服务器确认，不会采用你写在查询请求里的号码。结果里不回显手机号、姓名或地址。</text>
+    <text class="privacy-copy">打开快递公司小程序前，会把对应单号写入剪贴板。微信把 wx.setClipboardData 和读取剪贴板列在同一项隐私说明里。本程序只写入单号，不读取剪贴板，也不把手机号发给快递公司。</text>
+    <view class="row">
+      <button class="btn ghost" bindtap="onOpenContract">查看隐私指引</button>
+      <button
+        id="agree-btn"
+        class="btn primary"
+        open-type="agreePrivacyAuthorization"
+        bindagreeprivacyauthorization="onAgreePrivacy"
+      >同意并继续</button>
+    </view>
+  </view>
+
+  <view class="brand">
+    <text class="brand-mark">刊邮</text>
+    <view class="brand-text">
+      <text class="title">杂志邮寄单号查询</text>
+      <text class="disclaimer">按完整手机号查看已录入的快递单号。不是任何杂志社或快递公司的官方客户端。</text>
+    </view>
+  </view>
+
+  <view class="goldbar">
+    <text>填写收件手机号。结果只有杂志、日期、邮寄方式和单号。</text>
+  </view>
+
+  <view class="box">
+    <text class="box-title">查询单号</text>
+    <view class="box-body">
+      <button class="btn primary block" open-type="getPhoneNumber" bindgetphonenumber="onGetPhone" disabled="{{showPrivacy}}">使用微信手机号验证</button>
+      <text class="hint">微信手机号组件需要非个人主体，并按次计费。没有开通时请用下面的短信验证码。</text>
+      <text class="label">手机号</text>
+      <input
+        class="field"
+        type="text"
+        maxlength="24"
+        placeholder="请输入完整手机号"
+        value="{{phone}}"
+        bindinput="onPhoneInput"
+        disabled="{{status === 'loading'}}"
+      />
+      <text class="hint">需要全部数字。空格和 +86 可以留着。验证码发给这个号码，通过后才能查询。</text>
+      <input
+        wx:if="{{status === 'code'}}"
+        class="field"
+        type="number"
+        maxlength="6"
+        placeholder="6 位验证码"
+        value="{{code}}"
+        bindinput="onCodeInput"
+      />
+      <text class="error" wx:if="{{status === 'invalid' || message}}">{{message}}</text>
+      <button wx:if="{{status !== 'code'}}" class="btn primary block" bindtap="onSendCode" disabled="{{status === 'loading' || showPrivacy}}">获取验证码</button>
+      <button wx:else class="btn primary block" bindtap="onVerifyCode" disabled="{{showPrivacy}}">验证并查询</button>
+    </view>
+  </view>
+
+  <view class="box">
+    <text class="box-title">到官方小程序查询</text>
+    <view class="box-body">
+      <text class="hint">韵达、中通、中国邮政 EMS 都只打开首页。有对应单号时会先复制，再请你在对方页面粘贴。没有核实到可自动带单号的路径。</text>
+      <view class="row">
+        <button
+          class="btn primary"
+          wx:for="{{carriers}}"
+          wx:key="id"
+          bindtap="onOpenCarrier"
+          data-id="{{item.id}}"
+          disabled="{{showPrivacy}}"
+        >{{item.button}}</button>
+      </view>
+      <text class="hint" wx:if="{{carrierMessage}}">{{carrierMessage}}</text>
+    </view>
+  </view>
+
+  <view wx:if="{{demoWarning}}" class="banner">{{demoWarning}}</view>
+
+  <view wx:if="{{status === 'loading'}}" class="panel">正在查询，请稍候。</view>
+
+  <view wx:if="{{status === 'empty'}}" class="panel">
+    <text class="panel-title">没有找到邮寄记录</text>
+    <text class="panel-copy">{{message}}</text>
+  </view>
+
+  <view wx:if="{{status === 'limited'}}" class="panel bad">
+    <text class="panel-title">查询过于频繁</text>
+    <text class="panel-copy">{{message}}</text>
+  </view>
+
+  <view wx:if="{{status === 'error' || status === 'config'}}" class="panel bad">
+    <text class="panel-title">{{status === 'config' ? '还不能查询' : '查询没有完成'}}</text>
+    <text class="panel-copy">{{message}}</text>
+    <button wx:if="{{status === 'error'}}" class="btn ghost block" bindtap="onLookup">再试一次</button>
+  </view>
+
+  <view wx:if="{{status === 'results'}}">
+    <text class="result-head">找到 {{shipments.length}} 条邮寄记录</text>
+    <text class="hint">按寄出日期从新到旧。这里没有物流轨迹。</text>
+    <view class="card" wx:for="{{shipments}}" wx:key="key">
+      <text class="card-title">{{item.magazineName}}</text>
+      <view class="card-body">
+        <text class="stamp" wx:if="{{item.sample}}">虚构示例</text>
+        <text class="meta">寄出日期 {{item.dateText}}</text>
+        <text class="meta">邮寄方式 {{item.shippingMethod}}</text>
+        <text class="fine">快递单号</text>
+        <text class="tracking" user-select="{{true}}">{{item.trackingNumber}}</text>
+        <view class="row">
+          <button class="btn ghost" bindtap="onCopy" data-index="{{index}}" disabled="{{showPrivacy}}">复制单号</button>
+          <button
+            wx:if="{{item.showJump}}"
+            class="btn primary"
+            bindtap="onJump"
+            data-index="{{index}}"
+            disabled="{{showPrivacy}}"
+          >打开{{item.jump.carrierName}}</button>
+        </view>
+        <text class="notice" wx:if="{{item.showJump}}">{{item.jump.notice}}</text>
+        <text class="hint" wx:if="{{!item.showJump}}">{{item.jump.notice}}</text>
+        <text class="ok" wx:if="{{item.copyMessage}}">{{item.copyMessage}}</text>
+        <text class="hint" wx:if="{{item.jumpMessage}}">{{item.jumpMessage}}</text>
+      </view>
+    </view>
+    <text class="hint" wx:if="{{truncated}}">只显示最近 100 条。</text>
+  </view>
+</view>
