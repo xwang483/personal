@@ -1,4 +1,6 @@
 const { runtimeConfig } = require("../../config");
+const { resolveApiBase } = require("../../utils/api-base");
+const { normalizePhone, phoneMessage } = require("../../utils/phone");
 const { copyTrackingNumber, handleCopyResult } = require("../../utils/clipboard");
 const { buildCarrierById, listCarriers, requestCarrierJump } = require("../../utils/carriers");
 const { performLookup } = require("../../utils/lookup");
@@ -15,6 +17,8 @@ function useJump(options) {
 Page({
   data: {
     phone: "",
+    code: "",
+    token: "",
     status: "idle",
     message: "",
     shipments: [],
@@ -63,12 +67,102 @@ Page({
     this.setData({ showPrivacy: false, privacyReady: true });
   },
 
+  onCodeInput(event) {
+    const value = event && event.detail ? event.detail.value : "";
+    this.setData({ code: value });
+  },
+
+  saveToken(token) {
+    wx.setStorageSync("readerToken", token);
+    this.setData({ token });
+  },
+
+  onGetPhone(event) {
+    const detail = event && event.detail ? event.detail : {};
+    if (!detail.code) {
+      this.setData({ message: "没有拿到微信手机号，请改用短信验证码。" });
+      return;
+    }
+    const base = resolveApiBase(runtimeConfig);
+    if (!base.ok) {
+      this.setData({ status: "config", message: base.message });
+      return;
+    }
+    wx.request({
+      url: base.origin + "/api/auth/wechat",
+      method: "POST",
+      data: { code: detail.code },
+      header: { "content-type": "application/json" },
+      success: (res) => {
+        const token = res.data && res.data.token;
+        if (res.statusCode !== 200 || !token) {
+          this.setData({ message: (res.data && res.data.error) || "微信手机号验证没有完成，请改用短信验证码。" });
+          return;
+        }
+        this.saveToken(token);
+        this.onLookup();
+      },
+      fail: () => this.setData({ message: "微信手机号验证没有完成，请改用短信验证码。" }),
+    });
+  },
+
+  onSendCode() {
+    const normalized = normalizePhone(this.data.phone);
+    if (!normalized.ok) {
+      this.setData({ status: "invalid", message: phoneMessage(normalized.code) });
+      return;
+    }
+    const base = resolveApiBase(runtimeConfig);
+    if (!base.ok) {
+      this.setData({ status: "config", message: base.message });
+      return;
+    }
+    wx.request({
+      url: base.origin + "/api/auth/sms/send",
+      method: "POST",
+      data: { phone: normalized.phone },
+      header: { "content-type": "application/json" },
+      success: (res) => {
+        if (res.statusCode !== 200) {
+          this.setData({ status: "invalid", message: (res.data && res.data.error) || "验证码没有发出。" });
+          return;
+        }
+        this.setData({ status: "code", message: "验证码已发出。请填写 6 位数字。" });
+      },
+      fail: () => this.setData({ status: "error", message: "验证码没有发出。" }),
+    });
+  },
+
+  onVerifyCode() {
+    const normalized = normalizePhone(this.data.phone);
+    const base = resolveApiBase(runtimeConfig);
+    if (!normalized.ok || !base.ok) return;
+    wx.request({
+      url: base.origin + "/api/auth/sms/verify",
+      method: "POST",
+      data: { phone: normalized.phone, code: this.data.code },
+      header: { "content-type": "application/json" },
+      success: (res) => {
+        const token = res.data && res.data.token;
+        if (res.statusCode !== 200 || !token) {
+          this.setData({ status: "invalid", message: (res.data && res.data.error) || "验证码不正确或已过期。" });
+          return;
+        }
+        this.saveToken(token);
+        this.onLookup();
+      },
+      fail: () => this.setData({ status: "error", message: "验证没有完成。" }),
+    });
+  },
+
   onLookup() {
     if (!this.data.privacyReady) {
       this.setData({ showPrivacy: true });
       return;
     }
+    const token = this.data.token || wx.getStorageSync("readerToken") || "";
     this.setData({
+      token,
       status: "loading",
       message: "",
       shipments: [],
@@ -78,7 +172,7 @@ Page({
     });
     performLookup({
       config: runtimeConfig,
-      phone: this.data.phone,
+      token,
       request: (options) =>
         new Promise((resolve, reject) => {
           wx.request({

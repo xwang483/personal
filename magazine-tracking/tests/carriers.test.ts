@@ -33,7 +33,7 @@ describe("carrier query links", () => {
     });
   }
 
-  const emsAliases = ["EMS", "中国邮政", "邮政快递", "邮政快递包裹", "邮政 EMS", "中国邮政速递"];
+  const emsAliases = ["EMS", "中国邮政", "邮政快递", "邮政快递包裹", "邮政 EMS", "中国邮政速递", "EMS快递", "中国邮政快递", "平邮", "挂号信", "邮政"];
 
   for (const alias of emsAliases) {
     it(`maps ${alias} to the China Post EMS site`, () => {

@@ -2,16 +2,16 @@ import { createHash } from "node:crypto";
 import type { ValidRow } from "@/lib/types";
 
 /**
- * Repeat imports of the same shipment update the existing row.
- * An order number, when present, is the stable id so a corrected tracking
- * number does not leave a duplicate. Without an order number, the tracking
- * number itself distinguishes shipments.
+ * A repeat import of the same magazine order replaces the existing row,
+ * including a corrected phone. The phone is not part of the key, so the old
+ * number stops matching. Without an order number, the tracking number is the
+ * stable id for that magazine.
  */
 export function identityKey(
-  row: Pick<ValidRow, "phone" | "magazineName" | "trackingNumber" | "orderNumber">,
+  row: Pick<ValidRow, "magazineName" | "trackingNumber" | "orderNumber">,
 ): string {
   const basis = row.orderNumber
-    ? `order\u001f${row.phone}\u001f${row.magazineName}\u001f${row.orderNumber}`
-    : `track\u001f${row.phone}\u001f${row.magazineName}\u001f${row.trackingNumber}`;
+    ? `order\u001f${row.magazineName}\u001f${row.orderNumber}`
+    : `track\u001f${row.magazineName}\u001f${row.trackingNumber}`;
   return createHash("sha256").update(basis).digest("hex");
 }

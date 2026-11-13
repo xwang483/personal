@@ -28,7 +28,7 @@ export default function HomePage() {
           <h1 className="box-title">杂志邮寄单号查询</h1>
           <div className="box-body">
             <p className="lede">
-              填写收件时登记的完整手机号，查看已录入的杂志名称、寄出日期、邮寄方式和快递单号。不用姓名，也不用订单号。
+              用收件手机号收取验证码。通过之后只能查看这个号码自己的杂志名称、寄出日期、邮寄方式和快递单号。
             </p>
             <ReaderLookup />
           </div>

@@ -3,6 +3,8 @@
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { formatChineseDate } from "@/lib/dates";
 
 type PreviewError = { row: number; field: string; message: string };
@@ -40,6 +42,15 @@ type Summary = {
   shipmentCount: number;
 };
 
+type AdminShipment = {
+  id: number;
+  phoneMasked: string;
+  magazineName: string;
+  date: string;
+  shippingMethod: string;
+  trackingNumber: string;
+};
+
 const downloads = [
   { href: "/api/admin/template?kind=template&format=csv", label: "空白模板 CSV" },
   { href: "/api/admin/template?kind=template&format=xlsx", label: "空白模板 Excel" },
@@ -57,6 +68,9 @@ export function AdminImport() {
   const [preview, setPreview] = useState<Preview | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [stats, setStats] = useState<{ shipmentCount: number; lastImportAt: string | null } | null>(null);
+  const [query, setQuery] = useState("");
+  const [found, setFound] = useState<AdminShipment[]>([]);
+  const [deleteMessage, setDeleteMessage] = useState("");
 
   async function loadStats() {
     const response = await fetch("/api/admin/stats", { cache: "no-store" });
@@ -149,6 +163,38 @@ export function AdminImport() {
       setPhase("error");
       setMessage("导入没有完成，请重新上传后再确认。");
     }
+  }
+
+  async function searchShipments(event?: React.FormEvent) {
+    event?.preventDefault();
+    setDeleteMessage("");
+    const response = await fetch(`/api/admin/shipments?q=${encodeURIComponent(query)}`, { cache: "no-store" });
+    if (response.status === 401) {
+      router.replace("/admin/login");
+      return;
+    }
+    if (!response.ok) return;
+    const body = (await response.json()) as { shipments?: AdminShipment[] };
+    setFound(body.shipments ?? []);
+  }
+
+  async function removeShipment(id: number) {
+    const response = await fetch("/api/admin/shipments", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ id }),
+    });
+    if (response.status === 401) {
+      router.replace("/admin/login");
+      return;
+    }
+    if (!response.ok) {
+      setDeleteMessage("没有删掉这条记录。");
+      return;
+    }
+    setFound((current) => current.filter((item) => item.id !== id));
+    setDeleteMessage("已删除。");
+    await loadStats();
   }
 
   return (
@@ -286,6 +332,43 @@ export function AdminImport() {
           </div>
           <p>库内现有 {summary.shipmentCount} 条记录。再次导入相同文件不会重复添加。</p>
         </section>
+      ) : null}
+
+      <form className="lookup-form" onSubmit={searchShipments}>
+        <Label htmlFor="shipment-query" className="field-label">
+          删除一条记录
+        </Label>
+        <Input
+          id="shipment-query"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="单号、订单号或完整手机号"
+          className="store-input h-11 bg-white px-3 text-base"
+        />
+        <div className="actions">
+          <Button type="submit" variant="outline" className="store-btn h-11">
+            查找
+          </Button>
+        </div>
+      </form>
+      {deleteMessage ? <p className="field-hint mt-2">{deleteMessage}</p> : null}
+      {found.length > 0 ? (
+        <ul className="result-list">
+          {found.map((item) => (
+            <li key={item.id} className="result-card">
+              <h3>{item.magazineName}</h3>
+              <p className="fine">
+                {item.date} · {item.shippingMethod} · {item.phoneMasked}
+              </p>
+              <p className="tracking-no">{item.trackingNumber}</p>
+              <div className="actions">
+                <Button type="button" variant="outline" className="store-btn h-11" onClick={() => removeShipment(item.id)}>
+                  删除
+                </Button>
+              </div>
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       <footer className="site-foot">

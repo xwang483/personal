@@ -57,6 +57,11 @@ const EMS_ALIASES = [
   "邮政包裹",
   "中国邮政速递",
   "邮政速递",
+  "ems快递",
+  "中国邮政快递",
+  "平邮",
+  "挂号信",
+  "邮政",
 ];
 
 function normalizeMethod(value: string): string {

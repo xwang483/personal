@@ -10,7 +10,7 @@
 
 在 `config.js` 填写 `apiBase`，例如 `https://lookup.example.com`。不要带路径、端口或密码。开发者工具若勾选「不校验合法域名」，只能用于临时演示。`trycloudflare` 域名默认会被拒绝。
 
-查询接口沿用网站的 `POST /api/lookup`，请求体只有 `{ "phone": "完整手机号" }`。
+查询接口沿用网站的 `POST /api/lookup`。请求体不带手机号。先用微信手机号或短信验证码换取服务器签发的 token，再放在 `Authorization: Bearer` 里。
 
 ## 复制成功
 
@@ -24,7 +24,7 @@
 
 在 `magazine-tracking` 目录执行 `npm test`。其中小程序用例用 Node 模拟 `wx.setClipboardData`、`wx.navigateToMiniProgram` 和 `wx.request`。
 
-这些测试检查：号码校验、只提交手机号、结果去掉姓名地址和手机号、缺少接口地址、限流和失败、复制成功与失败、取消跳转。韵达、中通、中国邮政 EMS 的跳转 `path` 为空且 `extraData` 是空对象；有单号时会先写入剪贴板。单号和手机号都不会被拼进跳转参数。
+这些测试检查：没有 token 不会发查询、查询请求不带手机号、结果去掉姓名地址和手机号、缺少接口地址、限流和失败、复制成功与失败、取消跳转。韵达、中通、中国邮政 EMS 的跳转 `path` 为空且 `extraData` 是空对象；有单号时会先写入剪贴板。单号和手机号都不会被拼进跳转参数。
 
 这不是微信开发者工具的编译结果，也不是手机上的跳转结果。
 

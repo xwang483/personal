@@ -33,6 +33,17 @@ function migrate(db: DatabaseSync) {
       payload TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS sms_codes (
+      id INTEGER PRIMARY KEY,
+      phone TEXT NOT NULL,
+      code_hash TEXT NOT NULL,
+      expires_at INTEGER NOT NULL,
+      attempts INTEGER NOT NULL DEFAULT 0,
+      used_at INTEGER,
+      created_at INTEGER NOT NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_sms_codes_phone ON sms_codes(phone, id DESC);
+
     CREATE TABLE IF NOT EXISTS import_log (
       id INTEGER PRIMARY KEY,
       created_at TEXT NOT NULL,

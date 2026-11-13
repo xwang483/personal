@@ -72,7 +72,23 @@ npm run lint
 
 ## 查询与隐私
 
-`POST /api/lookup` 只接受一个手机号。成功时只返回杂志名称、日期、邮寄方式和快递单号，不返回姓名、地址、手机号、订单号，也不返回别人的记录。
+读者先验证手机号。网站发送 6 位短信验证码，通过后写入一个约 30 分钟的 `HttpOnly` 签名 cookie。`POST /api/lookup` 只认这个会话里的号码，请求体里的手机号会被忽略。成功时只返回杂志名称、日期、邮寄方式和快递单号，不返回姓名、地址、手机号、订单号，也不返回别人的记录。
+
+验证码在库里只存哈希，大约 5 分钟过期，用过即废，每个码最多试 5 次。同一号码 60 秒内不能重发，并且按号码和来源地址限制发送次数。
+
+短信走一个很小的发送接口。默认 `SMS_PROVIDER=console`，把验证码打在服务器日志里，只给本机调试。生产环境必须改成 `aliyun`，否则发送会拒绝。选阿里云是因为它的「发送短信」就是一次请求：签名、模板、变量 `code`，不需要再装 SDK。上线前要在阿里云短信服务申请**短信签名**和**验证码模板**（模板里的变量名是 `code`），审核通过后填写：
+
+| 变量 | 作用 |
+| --- | --- |
+| `SMS_PROVIDER` | `console` 或 `aliyun` |
+| `ALIYUN_SMS_ACCESS_KEY_ID` | 阿里云 AccessKey |
+| `ALIYUN_SMS_ACCESS_KEY_SECRET` | 阿里云 AccessKey Secret |
+| `ALIYUN_SMS_SIGN_NAME` | 已审核的签名 |
+| `ALIYUN_SMS_TEMPLATE_CODE` | 已审核的模板 CODE |
+| `WECHAT_APP_ID` | 小程序 AppID，给微信手机号组件用 |
+| `WECHAT_APP_SECRET` | 小程序 AppSecret，只放在服务器上 |
+
+小程序优先用按钮 `open-type="getPhoneNumber"`。服务器拿一次性 code 调微信 `phonenumber.getPhoneNumber`，由服务器决定号码。这个能力要求已认证的**非个人主体**，并且按调用次数计费。没有开通时，小程序改用同一套短信验证码。
 
 这里不拉取物流轨迹，也没有到达预估。韵达、中通和中国邮政 EMS 可以另开官方页面，见下一节。
 

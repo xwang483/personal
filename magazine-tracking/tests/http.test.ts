@@ -7,11 +7,32 @@ import { POST as preview } from "../src/app/api/admin/import/preview/route.ts";
 import { GET as stats } from "../src/app/api/admin/stats/route.ts";
 import { GET as template } from "../src/app/api/admin/template/route.ts";
 import { POST as lookup } from "../src/app/api/lookup/route.ts";
+import { GET as searchShipments, POST as deleteShipment } from "../src/app/api/admin/shipments/route.ts";
+import { READER_COOKIE } from "../src/lib/constants.ts";
 import { closeDb, getDb } from "../src/lib/db.ts";
+import { createReaderToken } from "../src/lib/reader-session.ts";
 import { buildSampleCsv } from "../src/lib/samples.ts";
 import { bootEnv, request, sessionCookie } from "./helpers.ts";
 
 const dir = bootEnv();
+
+function readerCookie(phone: string) {
+  return `${READER_COOKIE}=${createReaderToken(phone)}`;
+}
+
+function lookupAs(phone: string, body: unknown = {}) {
+  return lookup(
+    request(
+      "/api/lookup",
+      {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(body),
+      },
+      readerCookie(phone),
+    ),
+  );
+}
 
 async function signIn() {
   const response = await login(
@@ -39,6 +60,7 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
     db.exec("DELETE FROM shipments");
     db.exec("DELETE FROM import_previews");
     db.exec("DELETE FROM import_log");
+    db.exec("DELETE FROM sms_codes");
   });
 
   after(() => {
@@ -83,7 +105,7 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
     const firstPreview = await postFile(cookie, "sample.csv", buildSampleCsv());
     assert.equal(firstPreview.status, 200);
     const previewBody = await firstPreview.json();
-    assert.equal(previewBody.validCount, 3);
+    assert.equal(previewBody.validCount, 4);
     assert.equal(JSON.stringify(previewBody).includes("13800001111"), false);
     assert.equal(JSON.stringify(previewBody).includes("虚构姓名"), false);
     assert.equal(JSON.stringify(previewBody).includes("虚构地址"), false);
@@ -102,7 +124,7 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
     );
     const firstSummary = await firstCommit.json();
     assert.equal(firstCommit.status, 200);
-    assert.equal(firstSummary.inserted, 3);
+    assert.equal(firstSummary.inserted, 4);
     assert.equal(firstSummary.unchanged, 0);
 
     const againPreview = await postFile(cookie, "sample.csv", buildSampleCsv());
@@ -121,8 +143,8 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
     const againSummary = await againCommit.json();
     assert.equal(againSummary.inserted, 0);
     assert.equal(againSummary.updated, 0);
-    assert.equal(againSummary.unchanged, 3);
-    assert.equal(againSummary.shipmentCount, 3);
+    assert.equal(againSummary.unchanged, 4);
+    assert.equal(againSummary.shipmentCount, 4);
 
     const spent = await commit(
       request(
@@ -154,13 +176,7 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
       ),
     );
 
-    const found = await lookup(
-      request("/api/lookup", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: "+86 138 0000 1111" }),
-      }),
-    );
+    const found = await lookupAs("13800001111", { phone: "13900002222" });
     assert.equal(found.status, 200);
     assert.equal(found.headers.get("cache-control"), "no-store");
     const payload = await found.json();
@@ -187,17 +203,21 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
     assert.equal(text.includes("虚构"), false);
     assert.equal(text.includes("《刊林》2026年春季号（示例）"), true);
 
-    const other = await lookup(
+    const anonymous = await lookup(
       request("/api/lookup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: "13900002222" }),
+        body: JSON.stringify({ phone: "13800001111" }),
       }),
     );
+    assert.equal(anonymous.status, 401);
+
+    const other = await lookupAs("13900002222", { phone: "13800001111" });
     const otherBody = await other.json();
-    assert.equal(otherBody.shipments.length, 1);
-    assert.equal(otherBody.shipments[0].trackingNumber, "DEMO-JD-000003");
-    assert.equal(otherBody.shipments[0].shippingMethod, "京东物流");
+    assert.equal(otherBody.shipments.length, 2);
+    assert.equal(otherBody.shipments.some((item: { trackingNumber: string }) => item.trackingNumber === "DEMO-JD-000003"), true);
+    assert.equal(otherBody.shipments.some((item: { trackingNumber: string }) => item.trackingNumber === "DEMO-EMS-000004"), true);
+    assert.equal(JSON.stringify(otherBody).includes("DEMO-YD-000001"), false);
     assert.equal(JSON.stringify(otherBody).includes("http"), false);
 
     getDb().exec("PRAGMA wal_checkpoint(TRUNCATE)");
@@ -211,37 +231,19 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
     assert.equal(storedText.includes("DEMO-ORDER-0001"), true);
   });
 
-  it("distinguishes empty, invalid, and unknown full numbers", async () => {
-    const empty = await lookup(
+  it("distinguishes an unverified request from an empty verified number", async () => {
+    const anonymous = await lookup(
       request("/api/lookup", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ phone: "13700004444" }),
       }),
     );
+    assert.equal(anonymous.status, 401);
+
+    const empty = await lookupAs("13700004444", { phone: "13800001111" });
     assert.equal(empty.status, 200);
     assert.deepEqual(await empty.json(), { shipments: [], truncated: false });
-
-    const invalid = await lookup(
-      request("/api/lookup", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: "1380000111" }),
-      }),
-    );
-    assert.equal(invalid.status, 400);
-    const invalidBody = await invalid.json();
-    assert.equal("shipments" in invalidBody, false);
-    assert.equal(JSON.stringify(invalidBody).includes("1380000111"), false);
-
-    const injected = await lookup(
-      request("/api/lookup", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: "13800001111' OR '1'='1" }),
-      }),
-    );
-    assert.equal(injected.status, 400);
   });
 
   it("updates a tracking number for the same order instead of duplicating it", async () => {
@@ -270,17 +272,78 @@ describe("lookup and admin import", { concurrency: 1 }, () => {
       );
       assert.equal(saved.status, 200);
     }
-    const found = await lookup(
-      request("/api/lookup", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone: "13800001111" }),
-      }),
-    );
+    const found = await lookupAs("13800001111", { phone: "13900002222" });
     const payload = await found.json();
     assert.equal(payload.shipments.length, 1);
     assert.equal(payload.shipments[0].trackingNumber, "DEMO-SF-CHANGED");
     assert.equal(payload.shipments[0].date, "2026-03-05");
+    const oldPhone = await lookupAs("13900009999");
+    assert.deepEqual(await oldPhone.json(), { shipments: [], truncated: false });
+  });
+
+  it("replaces the phone on a corrected reimport and lets an admin delete the row", async () => {
+    const cookie = await signIn();
+    const original = Buffer.from(
+      "姓名,收货地址,邮寄方式,单号,日期,电话,,杂志名称,订单号\n甲,址,邮政快递,DEMO-EMS-9,2026-03-02,13800001111,,《刊林》（示例）,ORDER-PHONE\n",
+      "utf8",
+    );
+    const moved = Buffer.from(
+      "姓名,收货地址,邮寄方式,单号,日期,电话,,杂志名称,订单号\n甲,址,邮政快递,DEMO-EMS-9,2026-03-02,13900002222,,《刊林》（示例）,ORDER-PHONE\n",
+      "utf8",
+    );
+    for (const file of [original, moved]) {
+      const uploaded = await postFile(cookie, "move.csv", file);
+      const body = await uploaded.json();
+      const saved = await commit(
+        request(
+          "/api/admin/import/commit",
+          {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: JSON.stringify({ token: body.token }),
+          },
+          cookie,
+        ),
+      );
+      assert.equal(saved.status, 200);
+    }
+    const oldPhone = await lookupAs("13800001111");
+    assert.deepEqual((await oldPhone.json()).shipments, []);
+    const newPhone = await lookupAs("13900002222");
+    const movedBody = await newPhone.json();
+    assert.equal(movedBody.shipments.length, 1);
+    assert.equal(movedBody.shipments[0].trackingNumber, "DEMO-EMS-9");
+
+    const listed = await searchShipments(request("/api/admin/shipments?q=DEMO-EMS-9", {}, cookie));
+    const rows = (await listed.json()).shipments as Array<{ id: number }>;
+    assert.equal(rows.length, 1);
+    const removed = await deleteShipment(
+      request(
+        "/api/admin/shipments",
+        { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ id: rows[0].id }) },
+        cookie,
+      ),
+    );
+    assert.equal(removed.status, 200);
+    assert.deepEqual((await (await lookupAs("13900002222")).json()).shipments, []);
+  });
+
+  it("rejects a chunked body over the parsed-size cap", async () => {
+    const stream = new ReadableStream({
+      start(controller) {
+        controller.enqueue(new TextEncoder().encode(`{"phone":"${"1".repeat(100_000)}"}`));
+        controller.close();
+      },
+    });
+    const response = await lookup(
+      new Request("http://localhost/api/lookup", {
+        method: "POST",
+        headers: { host: "localhost", origin: "http://localhost", "content-type": "application/json" },
+        body: stream,
+        duplex: "half",
+      }),
+    );
+    assert.equal(response.status, 413);
   });
 
   it("serves a header-only template and a marked sample", async () => {

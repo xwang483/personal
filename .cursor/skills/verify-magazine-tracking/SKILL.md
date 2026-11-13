@@ -14,9 +14,11 @@ node scripts/verify-site.mjs
 The script starts `next dev` on port 4173 with a temporary database, imports the fictional sample file through the admin API, then drives Chrome:
 
 1. Load `/` and check the lookup heading.
-2. Enter a partial phone number and check the validation message.
-3. Enter `138 0000 1111` and check that `DEMO-YD-000001` and `DEMO-ZT-000002` appear, without the reader's name or phone.
-4. Check the 韵达 and 中通 links are the fixed official pages and do not contain the tracking number.
+2. Reject a partial phone number.
+3. Send a code through the console SMS provider, reject a wrong code, then accept the logged code.
+4. Check that `13800001111` sees only `DEMO-YD-000001` and `DEMO-ZT-000002`, and a request body naming another phone cannot read that phone's rows.
+5. Click 查询物流 and check the clipboard.
+6. Repeat the login at 390px for `13900002222` and check the China Post link.
 
 It prints `PASS` lines and exits 0, or `FAIL` and exits 1. It does not open WeChat DevTools. `npm test` still covers the mini program jump logic in Node.
 

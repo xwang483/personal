@@ -15,11 +15,11 @@ describe("table import", () => {
     assert.equal(parsed.ok, true);
     if (!parsed.ok) return;
     assert.equal(parsed.encoding, "utf-8");
-    assert.equal(parsed.table.validRows.length, 3);
+    assert.equal(parsed.table.validRows.length, 4);
     assert.ok(parsed.table.ignoredBlankColumns >= 1);
     assert.deepEqual(
       parsed.table.validRows.map((row) => row.phone).sort(),
-      ["13800001111", "13800001111", "13900002222"].sort(),
+      ["13800001111", "13800001111", "13900002222", "13900002222"].sort(),
     );
     const serialized = JSON.stringify(parsed.table.validRows);
     assert.equal(serialized.includes("虚构姓名"), false);

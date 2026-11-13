@@ -20,6 +20,11 @@ export const MAX_PREVIEW_ROWS = 8;
 export const MAX_LOOKUP_RESULTS = 100;
 export const PREVIEW_TTL_MS = 15 * 60 * 1000;
 export const SESSION_TTL_SECONDS = 12 * 60 * 60;
+export const READER_SESSION_TTL_SECONDS = 30 * 60;
+export const SMS_TTL_MS = 5 * 60 * 1000;
+export const SMS_MAX_ATTEMPTS = 5;
+export const SMS_RESEND_MS = 60 * 1000;
+export const MAX_JSON_BODY = 2_048;
 
 export const FIELD_LIMITS = {
   magazineName: 80,
@@ -29,3 +34,4 @@ export const FIELD_LIMITS = {
 } as const;
 
 export const SESSION_COOKIE = "mag_session";
+export const READER_COOKIE = "reader_session";

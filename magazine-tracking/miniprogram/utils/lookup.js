@@ -1,5 +1,5 @@
 const { resolveApiBase } = require("./api-base");
-const { normalizePhone, phoneMessage } = require("./phone");
+const { phoneMessage } = require("./phone");
 
 const PUBLIC_FIELDS = ["magazineName", "date", "shippingMethod", "trackingNumber"];
 
@@ -23,12 +23,15 @@ function sanitizeShipment(row) {
   return shipment;
 }
 
-function buildLookupRequest(origin, phone) {
+function buildLookupRequest(origin, token) {
   return {
     url: origin + "/api/lookup",
     method: "POST",
-    header: { "content-type": "application/json" },
-    data: { phone },
+    header: {
+      "content-type": "application/json",
+      authorization: "Bearer " + token,
+    },
+    data: {},
     timeout: 15000,
   };
 }
@@ -80,11 +83,11 @@ function interpretLookup(statusCode, body, phone) {
 function performLookup(options) {
   const config = options.config;
   const request = options.request;
-  const normalized = normalizePhone(options.phone);
-  if (!normalized.ok) {
+  const token = typeof options.token === "string" ? options.token : "";
+  if (!token) {
     return Promise.resolve({
-      status: "invalid",
-      message: phoneMessage(normalized.code),
+      status: "auth",
+      message: "请先验证手机号。查询不会使用你填在请求里的号码。",
       shipments: [],
       truncated: false,
       demoWarning: "",
@@ -111,12 +114,22 @@ function performLookup(options) {
     });
   }
 
-  const payload = buildLookupRequest(base.origin, normalized.phone);
+  const payload = buildLookupRequest(base.origin, token);
   return Promise.resolve()
     .then(() => request(payload))
     .then((response) => {
       const statusCode = response && typeof response.statusCode === "number" ? response.statusCode : 0;
-      const interpreted = interpretLookup(statusCode, response ? response.data : null, normalized.phone);
+      const encoded = JSON.stringify(payload);
+      if (encoded.indexOf("phone") !== -1) {
+        return {
+          status: "error",
+          message: "查询没有发出。",
+          shipments: [],
+          truncated: false,
+          demoWarning: "",
+        };
+      }
+      const interpreted = interpretLookup(statusCode, response ? response.data : null, "");
       interpreted.demoWarning = base.warning || "";
       return interpreted;
     })

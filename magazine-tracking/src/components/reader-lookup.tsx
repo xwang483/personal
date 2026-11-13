@@ -11,6 +11,7 @@ import type { PublicShipment } from "@/lib/types";
 
 type Status = "idle" | "loading" | "results" | "empty" | "invalid" | "error" | "limited";
 type CopyState = "copied" | "failed";
+type Step = "phone" | "code" | "ready";
 
 function copyTextSync(value: string): boolean {
   try {
@@ -47,6 +48,8 @@ async function copyText(value: string): Promise<boolean> {
 
 export function ReaderLookup() {
   const [phone, setPhone] = useState("");
+  const [code, setCode] = useState("");
+  const [step, setStep] = useState<Step>("phone");
   const [status, setStatus] = useState<Status>("idle");
   const [message, setMessage] = useState("");
   const [shipments, setShipments] = useState<PublicShipment[]>([]);
@@ -54,17 +57,9 @@ export function ReaderLookup() {
   const [copied, setCopied] = useState<number | null>(null);
   const [copyState, setCopyState] = useState<Record<number, CopyState>>({});
 
-  async function lookup(event?: React.FormEvent) {
-    event?.preventDefault();
+  async function lookup() {
     setCopied(null);
     setCopyState({});
-    if (!phone.trim()) {
-      setStatus("invalid");
-      setMessage("请输入完整的11位手机号。");
-      setShipments([]);
-      return;
-    }
-
     setStatus("loading");
     setMessage("");
     setShipments([]);
@@ -72,7 +67,7 @@ export function ReaderLookup() {
       const response = await fetch("/api/lookup", {
         method: "POST",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ phone }),
+        body: "{}",
         cache: "no-store",
       });
       const body = (await response.json()) as {
@@ -80,9 +75,10 @@ export function ReaderLookup() {
         shipments?: PublicShipment[];
         truncated?: boolean;
       };
-      if (response.status === 400) {
+      if (response.status === 401) {
+        setStep("phone");
         setStatus("invalid");
-        setMessage(body.error || "请输入完整的11位手机号。");
+        setMessage(body.error || "请先验证手机号。");
         return;
       }
       if (response.status === 429) {
@@ -95,6 +91,7 @@ export function ReaderLookup() {
         setMessage(body.error || "查询暂时不可用，请稍后再试。");
         return;
       }
+      setStep("ready");
       setTruncated(Boolean(body.truncated));
       setShipments(body.shipments);
       setStatus(body.shipments.length === 0 ? "empty" : "results");
@@ -102,6 +99,68 @@ export function ReaderLookup() {
       setStatus("error");
       setMessage("查询没有完成。请检查网络后重试。");
     }
+  }
+
+  async function sendCode(event?: React.FormEvent) {
+    event?.preventDefault();
+    if (!phone.trim()) {
+      setStatus("invalid");
+      setMessage("请输入完整的11位手机号。");
+      return;
+    }
+    setStatus("loading");
+    setMessage("");
+    try {
+      const response = await fetch("/api/auth/sms/send", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone }),
+      });
+      const body = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setStatus(response.status === 429 ? "limited" : "invalid");
+        setMessage(body.error || "验证码没有发出。");
+        return;
+      }
+      setStep("code");
+      setStatus("idle");
+      setMessage("验证码已发出，5 分钟内有效。");
+    } catch {
+      setStatus("error");
+      setMessage("验证码没有发出。请检查网络后重试。");
+    }
+  }
+
+  async function verifyCode(event?: React.FormEvent) {
+    event?.preventDefault();
+    setStatus("loading");
+    setMessage("");
+    try {
+      const response = await fetch("/api/auth/sms/verify", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ phone, code }),
+      });
+      const body = (await response.json()) as { error?: string };
+      if (!response.ok) {
+        setStatus("invalid");
+        setMessage(body.error || "验证码不正确或已过期。");
+        return;
+      }
+      await lookup();
+    } catch {
+      setStatus("error");
+      setMessage("验证没有完成。请检查网络后重试。");
+    }
+  }
+
+  async function logout() {
+    await fetch("/api/auth/logout", { method: "POST" });
+    setStep("phone");
+    setCode("");
+    setShipments([]);
+    setStatus("idle");
+    setMessage("");
   }
 
   async function onCopy(value: string, index: number) {
@@ -113,52 +172,97 @@ export function ReaderLookup() {
   function onOpenCarrier(href: string, trackingNumber: string, index: number) {
     if (!isAllowlistedCarrierUrl(href)) return;
     const copiedOk = copyTextSync(trackingNumber);
+    if (navigator.clipboard?.writeText) {
+      void navigator.clipboard.writeText(trackingNumber).then(
+        () => {
+          setCopyState((current) => ({ ...current, [index]: "copied" }));
+          setCopied(index);
+        },
+        () => {
+          if (!copiedOk) {
+            setCopyState((current) => ({ ...current, [index]: "failed" }));
+            setCopied(null);
+          }
+        },
+      );
+    }
     setCopyState((current) => ({ ...current, [index]: copiedOk ? "copied" : "failed" }));
     setCopied(copiedOk ? index : null);
   }
 
   return (
     <>
-      <form className="lookup-form" onSubmit={lookup} noValidate>
-        <Label htmlFor="phone" className="field-label">
-          手机号
-        </Label>
-        <Input
-          id="phone"
-          name="phone"
-          value={phone}
-          onChange={(event) => {
-            setPhone(event.target.value);
-            if (status === "invalid") setStatus("idle");
-          }}
-          inputMode="tel"
-          autoComplete="tel"
-          autoCorrect="off"
-          spellCheck={false}
-          maxLength={24}
-          placeholder="请输入完整手机号"
-          aria-invalid={status === "invalid"}
-          aria-describedby={status === "invalid" ? "phone-error" : "phone-hint"}
-          className="store-input h-11 bg-white px-3 text-base md:text-base"
-        />
-        <p id="phone-hint" className="field-hint mt-2">
-          需要全部数字。空格和 +86 可以留着，系统会按完整号码精确匹配。
-        </p>
-        {status === "invalid" ? (
-          <p id="phone-error" className="field-error" role="alert">
-            {message}
-          </p>
-        ) : null}
-        <div className="actions">
-          <Button
-            type="submit"
-            disabled={status === "loading"}
-            className="store-btn h-11 w-full text-base"
-          >
-            {status === "loading" ? "正在查询" : "查询单号"}
-          </Button>
+      {step === "ready" ? (
+        <div className="lookup-form">
+          <p className="field-hint">已验证当前手机号。结果只包含这个号码下的记录。</p>
+          <div className="actions">
+            <Button type="button" variant="outline" className="store-btn h-11" onClick={logout}>
+              退出验证
+            </Button>
+          </div>
         </div>
-      </form>
+      ) : (
+        <form className="lookup-form" onSubmit={step === "code" ? verifyCode : sendCode} noValidate>
+          <Label htmlFor="phone" className="field-label">
+            手机号
+          </Label>
+          <Input
+            id="phone"
+            name="phone"
+            value={phone}
+            onChange={(event) => {
+              setPhone(event.target.value);
+              if (status === "invalid") setStatus("idle");
+            }}
+            inputMode="tel"
+            autoComplete="tel"
+            autoCorrect="off"
+            spellCheck={false}
+            maxLength={24}
+            placeholder="请输入完整手机号"
+            readOnly={step === "code"}
+            aria-invalid={status === "invalid"}
+            aria-describedby={status === "invalid" ? "phone-error" : "phone-hint"}
+            className="store-input h-11 bg-white px-3 text-base md:text-base"
+          />
+          <p id="phone-hint" className="field-hint mt-2">
+            先收取 6 位验证码。验证通过后只能查看这个号码自己的单号。空格和 +86 可以留着。
+          </p>
+          {step === "code" ? (
+            <>
+              <Label htmlFor="code" className="field-label mt-3">
+                验证码
+              </Label>
+              <Input
+                id="code"
+                name="code"
+                value={code}
+                onChange={(event) => setCode(event.target.value)}
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                placeholder="6 位数字"
+                className="store-input h-11 bg-white px-3 text-base md:text-base"
+              />
+            </>
+          ) : null}
+          {status === "invalid" || (step === "code" && status === "idle" && message) ? (
+            <p id="phone-error" className={status === "invalid" ? "field-error" : "field-hint mt-2"} role="status">
+              {message}
+            </p>
+          ) : null}
+          <div className="actions">
+            <Button type="submit" disabled={status === "loading"} className="store-btn h-11 w-full text-base">
+              {status === "loading" ? "请稍候" : step === "code" ? "验证并查询" : "获取验证码"}
+            </Button>
+            {step === "code" ? (
+              <Button type="button" variant="outline" className="store-btn mt-2 h-11 w-full" onClick={() => sendCode()}>
+                重新获取
+              </Button>
+            ) : null}
+          </div>
+        </form>
+      )}
 
       <div aria-live="polite">
         {status === "loading" ? <div className="loading-line" /> : null}

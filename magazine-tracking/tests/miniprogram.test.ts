@@ -75,21 +75,24 @@ describe("miniprogram phone lookup", () => {
     }
   });
 
-  it("asks the server with only the phone and drops private fields", async () => {
+  it("asks the server with the session token and not a phone", async () => {
     const calls: Array<{ url: string; method: string; data: Record<string, string>; header: Record<string, string> }> = [];
     const result = await lookup.performLookup({
       config: { apiBase: "https://lookup.example.com", allowDemoTunnel: false },
+      token: "reader-token",
       phone: "138 0000 1111",
       request: requestSpy(
         {
           statusCode: 200,
           data: {
-            phone: FICTIONAL_PHONE,
+            token: "reader-token",
+      phone: FICTIONAL_PHONE,
             name: "虚构姓名",
             address: "虚构地址",
             shipments: [
               sampleRow({
-                phone: FICTIONAL_PHONE,
+                token: "reader-token",
+      phone: FICTIONAL_PHONE,
                 name: "虚构姓名",
                 address: "虚构地址",
                 orderNumber: "DEMO-ORDER-0001",
@@ -105,8 +108,9 @@ describe("miniprogram phone lookup", () => {
     assert.equal(calls.length, 1);
     assert.equal(calls[0].url, "https://lookup.example.com/api/lookup");
     assert.equal(calls[0].method, "POST");
-    assert.deepEqual(calls[0].data, { phone: FICTIONAL_PHONE });
-    assert.deepEqual(Object.keys(calls[0].data), ["phone"]);
+    assert.deepEqual(calls[0].data, {});
+    assert.equal(calls[0].header.authorization, "Bearer reader-token");
+    assert.equal(JSON.stringify(calls[0]).includes(FICTIONAL_PHONE), false);
     assert.equal(calls[0].header["content-type"], "application/json");
     assert.equal(result.status, "results");
     assert.deepEqual(Object.keys(result.shipments[0]).sort(), lookup.PUBLIC_FIELDS.slice().sort());
@@ -118,20 +122,21 @@ describe("miniprogram phone lookup", () => {
     assert.equal(encoded.includes(TRACKING), true);
   });
 
-  it("does not call the network for an invalid or partial number", async () => {
+  it("does not call the network before the server has verified the phone", async () => {
     const calls: unknown[] = [];
     const result = await lookup.performLookup({
       config: { apiBase: "https://lookup.example.com" },
-      phone: "1380000111",
+      phone: "13800001111",
       request: requestSpy({ statusCode: 200, data: { shipments: [] } }, calls),
     });
-    assert.equal(result.status, "invalid");
+    assert.equal(result.status, "auth");
     assert.equal(calls.length, 0);
   });
 
   it("reports an empty result without inventing shipment movement", async () => {
     const result = await lookup.performLookup({
       config: { apiBase: "https://lookup.example.com" },
+      token: "reader-token",
       phone: FICTIONAL_PHONE,
       request: requestSpy({ statusCode: 200, data: { shipments: [], truncated: false } }, []),
     });
@@ -143,6 +148,7 @@ describe("miniprogram phone lookup", () => {
   it("keeps rate-limit and server failures separate from a successful copy", async () => {
     const limited = await lookup.performLookup({
       config: { apiBase: "https://lookup.example.com" },
+      token: "reader-token",
       phone: FICTIONAL_PHONE,
       request: requestSpy({ statusCode: 429, data: { error: "查询过于频繁，请稍后再试。" } }, []),
     });
@@ -151,6 +157,7 @@ describe("miniprogram phone lookup", () => {
 
     const failed = await lookup.performLookup({
       config: { apiBase: "https://lookup.example.com" },
+      token: "reader-token",
       phone: FICTIONAL_PHONE,
       request: () => Promise.reject(new Error("offline")),
     });
@@ -162,6 +169,7 @@ describe("miniprogram phone lookup", () => {
     const calls: unknown[] = [];
     const missing = await lookup.performLookup({
       config: config.runtimeConfig,
+      token: "reader-token",
       phone: FICTIONAL_PHONE,
       request: requestSpy({ statusCode: 200, data: { shipments: [] } }, calls),
     });
@@ -193,6 +201,7 @@ describe("miniprogram phone lookup", () => {
 
     const result = await lookup.performLookup({
       config: { apiBase: "https://random.trycloudflare.com", allowDemoTunnel: true },
+      token: "reader-token",
       phone: FICTIONAL_PHONE,
       request: requestSpy({ statusCode: 200, data: { shipments: [sampleRow()] } }, []),
     });
@@ -249,6 +258,7 @@ describe("miniprogram copy and carrier jump", () => {
     const result = await carriers.requestCarrierJump({
       plan: { ...plan, extraData: { phone: FICTIONAL_PHONE, mailNo: TRACKING } },
       userTap: true,
+      token: "reader-token",
       phone: FICTIONAL_PHONE,
       trackingNumber: TRACKING,
       setClipboardData(options: { data: string; success: () => void; complete: () => void }) {
@@ -422,7 +432,7 @@ describe("miniprogram source boundaries", () => {
       .map((file) => readFileSync(file, "utf8"))
       .join("\n");
     assert.equal(source.includes("wx.getClipboardData"), false);
-    assert.equal(source.includes("getPhoneNumber"), false);
+    assert.equal(source.includes("open-type=\"getPhoneNumber\""), true);
     assert.equal(source.includes("navigateToMiniProgramAppIdList"), false);
     assert.equal(source.includes("wx48b603bcabbd1c20"), false);
     assert.equal(source.includes("wxdeb5309aa3e93fd1"), true);

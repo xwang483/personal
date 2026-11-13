@@ -2,6 +2,7 @@ import { randomBytes } from "node:crypto";
 import { MAX_LOOKUP_RESULTS, PREVIEW_TTL_MS } from "@/lib/constants";
 import { getDb, transaction } from "@/lib/db";
 import { identityKey } from "@/lib/identity";
+import { maskPhone } from "@/lib/phone";
 import type { PublicShipment, ValidRow } from "@/lib/types";
 
 export type CommitSummary = {
@@ -116,8 +117,19 @@ export function commitPreview(token: string): CommitSummary | null {
     if (!Array.isArray(parsed) || !parsed.every(isValidRow)) return null;
 
     const now = new Date().toISOString();
-    const selectExisting = db.prepare(
-      "SELECT ship_date, shipping_method, tracking_number FROM shipments WHERE identity_key = ?",
+    const selectByKey = db.prepare(
+      `SELECT id, phone, ship_date, shipping_method, tracking_number, identity_key
+       FROM shipments WHERE identity_key = ?`,
+    );
+    const selectByOrder = db.prepare(
+      `SELECT id, phone, ship_date, shipping_method, tracking_number, identity_key
+       FROM shipments WHERE magazine_name = ? AND order_number = ? AND order_number != ''
+       ORDER BY id LIMIT 1`,
+    );
+    const selectByTrack = db.prepare(
+      `SELECT id, phone, ship_date, shipping_method, tracking_number, identity_key
+       FROM shipments WHERE magazine_name = ? AND tracking_number = ? AND order_number = ''
+       ORDER BY id LIMIT 1`,
     );
     const insert = db.prepare(
       `INSERT INTO shipments (
@@ -127,9 +139,11 @@ export function commitPreview(token: string): CommitSummary | null {
     );
     const update = db.prepare(
       `UPDATE shipments
-       SET tracking_number = ?, ship_date = ?, shipping_method = ?, updated_at = ?
-       WHERE identity_key = ?`,
+       SET identity_key = ?, phone = ?, tracking_number = ?, ship_date = ?,
+           shipping_method = ?, order_number = ?, updated_at = ?
+       WHERE id = ?`,
     );
+    const dropOtherKey = db.prepare("DELETE FROM shipments WHERE identity_key = ? AND id != ?");
 
     let inserted = 0;
     let updated = 0;
@@ -137,7 +151,11 @@ export function commitPreview(token: string): CommitSummary | null {
 
     for (const row of parsed) {
       const key = identityKey(row);
-      const existing = selectExisting.get(key);
+      const existing =
+        selectByKey.get(key) ??
+        (row.orderNumber
+          ? selectByOrder.get(row.magazineName, row.orderNumber)
+          : selectByTrack.get(row.magazineName, row.trackingNumber));
       if (!existing) {
         insert.run(
           key,
@@ -154,14 +172,26 @@ export function commitPreview(token: string): CommitSummary | null {
         continue;
       }
       const same =
+        asString(existing.phone) === row.phone &&
         asString(existing.ship_date) === row.shipDate &&
         asString(existing.shipping_method) === row.shippingMethod &&
-        asString(existing.tracking_number) === row.trackingNumber;
+        asString(existing.tracking_number) === row.trackingNumber &&
+        asString(existing.identity_key) === key;
       if (same) {
         unchanged += 1;
         continue;
       }
-      update.run(row.trackingNumber, row.shipDate, row.shippingMethod, now, key);
+      dropOtherKey.run(key, existing.id);
+      update.run(
+        key,
+        row.phone,
+        row.trackingNumber,
+        row.shipDate,
+        row.shippingMethod,
+        row.orderNumber,
+        now,
+        existing.id,
+      );
       updated += 1;
     }
 
@@ -173,4 +203,43 @@ export function commitPreview(token: string): CommitSummary | null {
 
     return { inserted, updated, unchanged, shipmentCount: shipmentCount() };
   });
+}
+
+export type AdminShipment = {
+  id: number;
+  phoneMasked: string;
+  magazineName: string;
+  date: string;
+  shippingMethod: string;
+  trackingNumber: string;
+  orderNumber: string;
+};
+
+export function searchShipments(query: string): AdminShipment[] {
+  const needle = query.trim();
+  if (!needle || needle.length > 64) return [];
+  const rows = getDb()
+    .prepare(
+      `SELECT id, phone, magazine_name, ship_date, shipping_method, tracking_number, order_number
+       FROM shipments
+       WHERE tracking_number = ? OR order_number = ? OR phone = ?
+       ORDER BY ship_date DESC, id DESC
+       LIMIT 20`,
+    )
+    .all(needle, needle, needle);
+  return rows.map((row) => ({
+    id: asNumber(row.id),
+    phoneMasked: maskPhone(asString(row.phone)),
+    magazineName: asString(row.magazine_name),
+    date: asString(row.ship_date),
+    shippingMethod: asString(row.shipping_method),
+    trackingNumber: asString(row.tracking_number),
+    orderNumber: asString(row.order_number),
+  }));
+}
+
+export function deleteShipment(id: number): boolean {
+  if (!Number.isInteger(id) || id < 1) return false;
+  const result = getDb().prepare("DELETE FROM shipments WHERE id = ?").run(id);
+  return result.changes === 1;
 }

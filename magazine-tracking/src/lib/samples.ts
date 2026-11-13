@@ -46,6 +46,16 @@ const SAMPLE_ROWS: SampleRow[] = [
     magazine: "《南窗》总第12期（示例）",
     order: "DEMO-ORDER-0003",
   },
+  {
+    name: "虚构姓名（不会被保存）",
+    address: "虚构地址（不会被保存）",
+    method: "邮政快递",
+    tracking: "DEMO-EMS-000004",
+    date: "2026-04-01",
+    phone: "13900002222",
+    magazine: "《南窗》总第8期（示例）",
+    order: "DEMO-ORDER-0004",
+  },
 ];
 
 function csvEscape(value: string): string {

@@ -18,8 +18,28 @@ const eslintConfig = [
       "out/**",
       "build/**",
       "next-env.d.ts",
-      "miniprogram/**",
     ],
+  },
+  {
+    files: ["miniprogram/**/*.js"],
+    languageOptions: {
+      ecmaVersion: 2022,
+      sourceType: "commonjs",
+      globals: {
+        wx: "readonly",
+        App: "readonly",
+        Page: "readonly",
+        Component: "readonly",
+        getApp: "readonly",
+        require: "readonly",
+        module: "readonly",
+        exports: "readonly",
+        console: "readonly",
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-require-imports": "off",
+    },
   },
 ];
 

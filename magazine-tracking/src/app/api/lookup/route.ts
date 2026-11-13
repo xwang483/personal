@@ -1,5 +1,6 @@
+import { parseJsonObject, readLimitedBody } from "@/lib/body";
 import { json } from "@/lib/http";
-import { normalizePhone, publicPhoneMessage } from "@/lib/phone";
+import { readerPhoneFromRequest } from "@/lib/reader-session";
 import { clientKey, lookupLimit, rateLimit } from "@/lib/rate-limit";
 import { findByPhone } from "@/lib/shipments";
 
@@ -7,14 +8,14 @@ export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
 export async function POST(req: Request) {
-  const contentLength = Number(req.headers.get("content-length") ?? "0");
-  if (Number.isFinite(contentLength) && contentLength > 2_048) {
-    return json({ error: "请求无法处理。" }, 413);
-  }
   const contentType = req.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) {
     return json({ error: "请求无法处理。" }, 415);
   }
+
+  const bytes = await readLimitedBody(req);
+  if (!bytes) return json({ error: "请求无法处理。" }, 413);
+  parseJsonObject(bytes);
 
   const limit = lookupLimit();
   const gate = rateLimit(`lookup:${clientKey(req)}`, limit.limit, limit.windowMs);
@@ -26,26 +27,11 @@ export async function POST(req: Request) {
     );
   }
 
-  let body: unknown;
-  try {
-    body = await req.json();
-  } catch {
-    return json({ error: publicPhoneMessage("invalid") }, 400);
-  }
-
-  const phoneValue =
-    body && typeof body === "object" && !Array.isArray(body)
-      ? (body as { phone?: unknown }).phone
-      : undefined;
-  if (typeof phoneValue !== "string" || phoneValue.length > 32) {
-    return json({ error: publicPhoneMessage("invalid") }, 400);
-  }
-
-  const normalized = normalizePhone(phoneValue);
-  if (!normalized.ok) return json({ error: publicPhoneMessage(normalized.code) }, 400);
+  const phone = readerPhoneFromRequest(req);
+  if (!phone) return json({ error: "请先验证手机号。" }, 401);
 
   try {
-    const result = findByPhone(normalized.phone);
+    const result = findByPhone(phone);
     return json({ shipments: result.shipments, truncated: result.truncated });
   } catch (error) {
     console.error("lookup failed", error instanceof Error ? error.name : "error");
