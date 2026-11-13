@@ -245,11 +245,17 @@ describe("miniprogram copy and carrier jump", () => {
   it("opens only the documented Yunda homepage and never sends phone or tracking params", async () => {
     const plan = carriers.buildCarrierJump("韵达快递");
     const calls: Array<{ appId: string; path: string; extraData: Record<string, string> }> = [];
+    const copied: string[] = [];
     const result = await carriers.requestCarrierJump({
       plan: { ...plan, extraData: { phone: FICTIONAL_PHONE, mailNo: TRACKING } },
       userTap: true,
       phone: FICTIONAL_PHONE,
       trackingNumber: TRACKING,
+      setClipboardData(options: { data: string; success: () => void; complete: () => void }) {
+        copied.push(options.data);
+        options.success();
+        options.complete();
+      },
       navigateToMiniProgram(options: {
         appId: string;
         path: string;
@@ -261,11 +267,13 @@ describe("miniprogram copy and carrier jump", () => {
       },
     });
 
-    assert.equal(plan.notice, "仅打开首页，需自行粘贴查询。");
+    assert.match(plan.notice, /粘贴/);
+    assert.equal(plan.passesTracking, false);
     assert.equal(plan.deviceVerified, false);
     assert.equal(result.status, "opened");
-    assert.equal(result.deviceVerified, false);
-    assert.match(result.message, /不能当作已经验证/);
+    assert.equal(result.copied, true);
+    assert.deepEqual(copied, [TRACKING]);
+    assert.match(result.message, /开发者工具不能真正完成跳转/);
     assert.equal(calls.length, 1);
     assert.deepEqual(calls[0], {
       appId: "wxdeb5309aa3e93fd1",
@@ -324,26 +332,61 @@ describe("miniprogram copy and carrier jump", () => {
     assert.equal(called, false);
   });
 
-  it("keeps ZTO and unknown carriers on manual instructions", async () => {
-    for (const method of ["中通快递", "ZTO", "京东物流"]) {
+  it("jumps to the verified ZTO and EMS homepages and copies the number first", async () => {
+    const expected = [
+      ["中通快递", "wx7ddec43d9d27276a"],
+      ["邮政快递包裹", "wx63e410bc2c6a792e"],
+      ["EMS", "wx63e410bc2c6a792e"],
+    ] as const;
+    for (const [method, appId] of expected) {
       const plan = carriers.buildCarrierJump(method);
-      let called = false;
+      const calls: Array<{ appId: string; path: string; extraData: Record<string, never> }> = [];
+      const copied: string[] = [];
       const result = await carriers.requestCarrierJump({
         plan,
         userTap: true,
-        navigateToMiniProgram() {
-          called = true;
+        trackingNumber: TRACKING,
+        setClipboardData(options: { data: string; success: () => void; complete: () => void }) {
+          copied.push(options.data);
+          options.success();
+          options.complete();
+        },
+        navigateToMiniProgram(options: {
+          appId: string;
+          path: string;
+          extraData: Record<string, never>;
+          success: () => void;
+        }) {
+          calls.push({ appId: options.appId, path: options.path, extraData: options.extraData });
+          options.success();
         },
       });
-      assert.equal(plan.enabled, false, method);
-      assert.equal(plan.appId, undefined);
-      assert.equal(result.status, "unconfigured");
-      assert.equal(result.called, false);
-      assert.equal(called, false);
+      assert.equal(plan.enabled, true, method);
+      assert.equal(plan.appId, appId);
+      assert.equal(plan.passesTracking, false);
+      assert.equal(result.status, "opened");
+      assert.deepEqual(copied, [TRACKING]);
+      assert.deepEqual(calls, [{ appId, path: "", extraData: {} }]);
+      assert.equal(JSON.stringify(calls[0]).includes(TRACKING), false);
     }
+
+    const unknown = carriers.buildCarrierJump("京东物流");
+    let called = false;
+    const blocked = await carriers.requestCarrierJump({
+      plan: unknown,
+      userTap: true,
+      trackingNumber: TRACKING,
+      navigateToMiniProgram() {
+        called = true;
+      },
+    });
+    assert.equal(unknown.enabled, false);
+    assert.equal(blocked.status, "unconfigured");
+    assert.equal(called, false);
+
     const card = present.presentShipment(sampleRow({ shippingMethod: "中通" }));
-    assert.equal(card.showJump, false);
-    assert.match(card.jump.notice, /不会发起跳转/);
+    assert.equal(card.showJump, true);
+    assert.equal(card.jump.appId, "wx7ddec43d9d27276a");
     const yundaCard = present.presentShipment(sampleRow());
     assert.equal(yundaCard.showJump, true);
     assert.equal(yundaCard.sample, true);
@@ -352,11 +395,27 @@ describe("miniprogram copy and carrier jump", () => {
 });
 
 describe("miniprogram source boundaries", () => {
+  it("has the files a WeChat project needs", () => {
+    for (const file of ["app.js", "app.json", "app.wxss", "sitemap.json", "project.config.json"]) {
+      assert.equal(statSync(path.join(root, file)).isFile(), true, file);
+    }
+    const app = JSON.parse(read("app.json"));
+    assert.ok(Array.isArray(app.pages) && app.pages.length > 0);
+    for (const page of app.pages) {
+      for (const ext of [".js", ".json", ".wxml", ".wxss"]) {
+        assert.equal(statSync(path.join(root, `${page}${ext}`)).isFile(), true, `${page}${ext}`);
+      }
+    }
+    JSON.parse(read("sitemap.json"));
+    JSON.parse(read("project.config.json"));
+  });
+
   it("does not declare an obsolete jump list, a carrier secret, or unread clipboard access", () => {
     const app = JSON.parse(read("app.json"));
     const project = JSON.parse(read("project.config.json"));
     assert.equal(Object.hasOwn(app, "navigateToMiniProgramAppIdList"), false);
-    assert.equal(project.appid, "");
+    assert.equal(project.appid, "touristappid");
+    assert.match(project.description, /touristappid/);
     assert.equal(app.__usePrivacyCheck__, true);
 
     const source = walkJs(root)
@@ -367,5 +426,8 @@ describe("miniprogram source boundaries", () => {
     assert.equal(source.includes("navigateToMiniProgramAppIdList"), false);
     assert.equal(source.includes("wx48b603bcabbd1c20"), false);
     assert.equal(source.includes("wxdeb5309aa3e93fd1"), true);
+    assert.equal(source.includes("wx7ddec43d9d27276a"), true);
+    assert.equal(source.includes("wx63e410bc2c6a792e"), true);
+    assert.equal(source.includes("TODO_APPID"), false);
   });
 });

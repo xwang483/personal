@@ -44,5 +44,5 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# local WeChat devtools AppID; the shared project.config.json stays empty
+# local WeChat devtools AppID override; project.config.json keeps the touristappid placeholder
 /miniprogram/project.private.config.json

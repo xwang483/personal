@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { formatChineseDate } from "@/lib/dates";
@@ -155,22 +154,13 @@ export function AdminImport() {
   return (
     <>
       <div className="admin-bar">
-        <Link className="wordmark" href="/">
-          刊邮
-        </Link>
-        <Button type="button" variant="ghost" className="h-10" onClick={logout}>
+        <p className="lede">
+          上传 .xlsx 或 CSV。表头需与模板一致，空白间隔列会忽略。姓名和收货地址只用来认出表格，不会写入数据库，也不会出现在读者查询里。
+        </p>
+        <Button type="button" variant="outline" className="h-10 shrink-0" onClick={logout}>
           退出
         </Button>
       </div>
-      <p className="kicker">
-        <span>管理人员</span>
-        <i />
-        <span>导入</span>
-      </p>
-      <h1>导入邮寄表</h1>
-      <p className="lede">
-        上传 .xlsx 或 CSV。表头需与模板一致，空白间隔列会忽略。姓名和收货地址只用来认出表格，不会写入数据库，也不会出现在读者查询里。
-      </p>
       <p className="stat-line">
         {stats
           ? `已收录 ${stats.shipmentCount} 条记录${stats.lastImportAt ? ` · 最近导入 ${stats.lastImportAt.slice(0, 16).replace("T", " ")}` : ""}`

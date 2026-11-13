@@ -1,22 +1,20 @@
 import Link from "next/link";
+import { SiteShell } from "@/components/site-shell";
 
 export default function NotFound() {
   return (
-    <main className="sheet-page">
-      <section className="sheet">
-        <div className="rules" aria-hidden="true">
-          <span />
-          <span />
+    <SiteShell current="lookup">
+      <section className="box">
+        <h1 className="box-title">没有这一页</h1>
+        <div className="box-body">
+          <p className="lede">查询邮寄单号请回到首页，管理人员请从「导入邮寄表」登录。</p>
+          <p className="actions">
+            <Link className="text-link" href="/">
+              返回查询
+            </Link>
+          </p>
         </div>
-        <p className="wordmark">刊邮</p>
-        <h1>没有这一页</h1>
-        <p className="lede">查询邮寄单号请回到首页，管理人员请从首页底部的入口登录。</p>
-        <p className="site-foot">
-          <Link className="quiet-link" href="/">
-            返回查询
-          </Link>
-        </p>
       </section>
-    </main>
+    </SiteShell>
   );
 }

@@ -5,29 +5,24 @@ import { Check, Copy } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { carrierDestination } from "@/lib/carriers";
+import { carrierDestination, isAllowlistedCarrierUrl } from "@/lib/carriers";
 import { formatChineseDate } from "@/lib/dates";
 import type { PublicShipment } from "@/lib/types";
 
 type Status = "idle" | "loading" | "results" | "empty" | "invalid" | "error" | "limited";
 type CopyState = "copied" | "failed";
 
-async function copyText(value: string): Promise<boolean> {
-  try {
-    if (navigator.clipboard?.writeText) {
-      await navigator.clipboard.writeText(value);
-      return true;
-    }
-  } catch {
-    // Fall through to the legacy copy path when permission is denied.
-  }
+function copyTextSync(value: string): boolean {
   try {
     const area = document.createElement("textarea");
     area.value = value;
     area.setAttribute("readonly", "");
     area.style.position = "fixed";
-    area.style.left = "-9999px";
+    area.style.top = "0";
+    area.style.left = "0";
+    area.style.opacity = "0";
     document.body.appendChild(area);
+    area.focus();
     area.select();
     const copied = document.execCommand("copy");
     area.remove();
@@ -35,6 +30,19 @@ async function copyText(value: string): Promise<boolean> {
   } catch {
     return false;
   }
+}
+
+async function copyText(value: string): Promise<boolean> {
+  if (copyTextSync(value)) return true;
+  try {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(value);
+      return true;
+    }
+  } catch {
+    // Permission can be denied; the caller shows a manual-copy hint.
+  }
+  return false;
 }
 
 export function ReaderLookup() {
@@ -102,6 +110,13 @@ export function ReaderLookup() {
     setCopied(copiedOk ? index : null);
   }
 
+  function onOpenCarrier(href: string, trackingNumber: string, index: number) {
+    if (!isAllowlistedCarrierUrl(href)) return;
+    const copiedOk = copyTextSync(trackingNumber);
+    setCopyState((current) => ({ ...current, [index]: copiedOk ? "copied" : "failed" }));
+    setCopied(copiedOk ? index : null);
+  }
+
   return (
     <>
       <form className="lookup-form" onSubmit={lookup} noValidate>
@@ -124,7 +139,7 @@ export function ReaderLookup() {
           placeholder="请输入完整手机号"
           aria-invalid={status === "invalid"}
           aria-describedby={status === "invalid" ? "phone-error" : "phone-hint"}
-          className="h-12 bg-white px-3 text-base md:text-base"
+          className="store-input h-11 bg-white px-3 text-base md:text-base"
         />
         <p id="phone-hint" className="field-hint mt-2">
           需要全部数字。空格和 +86 可以留着，系统会按完整号码精确匹配。
@@ -138,7 +153,7 @@ export function ReaderLookup() {
           <Button
             type="submit"
             disabled={status === "loading"}
-            className="h-12 w-full text-base"
+            className="store-btn h-11 w-full text-base"
           >
             {status === "loading" ? "正在查询" : "查询单号"}
           </Button>
@@ -161,7 +176,7 @@ export function ReaderLookup() {
             <p>{message}</p>
             {status === "error" ? (
               <div className="actions">
-                <Button type="button" variant="outline" className="h-11" onClick={() => lookup()}>
+                <Button type="button" variant="outline" className="store-btn h-11" onClick={() => lookup()}>
                   再试一次
                 </Button>
               </div>
@@ -197,19 +212,19 @@ export function ReaderLookup() {
                         <Button
                           type="button"
                           variant="outline"
-                          className="h-11 px-3"
+                          className="store-btn h-11 px-3"
                           onClick={() => onCopy(shipment.trackingNumber, index)}
                         >
                           {copied === index ? <Check /> : <Copy />}
                           {copied === index ? "已复制" : "复制"}
                         </Button>
                         {carrier ? (
-                          <Button asChild className="h-11 px-3">
+                          <Button asChild className="store-btn h-11 px-3">
                             <a
                               href={carrier.href}
                               target="_blank"
                               rel="noopener noreferrer"
-                              onClick={() => onCopy(shipment.trackingNumber, index)}
+                              onClick={() => onOpenCarrier(carrier.href, shipment.trackingNumber, index)}
                             >
                               查询物流
                             </a>
@@ -218,7 +233,7 @@ export function ReaderLookup() {
                       </div>
                       {carrier ? (
                         <p className="fine mt-2">
-                          打开{carrier.carrierName}官方查询页。单号不会自动填入，请粘贴后再查。
+                          打开{carrier.carrierName}官方页面。单号不会自动填入，请粘贴后再查。
                           {state === "failed" ? " 没能复制单号，请在打开的页面手动输入。" : null}
                           {state === "copied" ? " 单号已复制。" : null}
                         </p>

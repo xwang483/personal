@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
 import {
+  EMS_QUERY_URL,
   YUNDA_QUERY_URL,
   ZTO_QUERY_URL,
   carrierDestination,
@@ -32,8 +33,21 @@ describe("carrier query links", () => {
     });
   }
 
+  const emsAliases = ["EMS", "中国邮政", "邮政快递", "邮政快递包裹", "邮政 EMS", "中国邮政速递"];
+
+  for (const alias of emsAliases) {
+    it(`maps ${alias} to the China Post EMS site`, () => {
+      const destination = carrierDestination(alias);
+      assert.ok(destination);
+      assert.equal(destination.href, EMS_QUERY_URL);
+      assert.equal(destination.carrierId, "ems");
+      assert.equal(destination.deepLink, false);
+      assert.equal(destination.href.includes("?"), false);
+    });
+  }
+
   it("does not invent a link for an unrecognized or lookalike method", () => {
-    for (const method of ["顺丰速运", "邮政快递包裹", "京东物流", "韵达国际", "中通冷链", "极兔", ""]) {
+    for (const method of ["顺丰速运", "京东物流", "韵达国际", "中通冷链", "极兔", "邮政国际专线", ""]) {
       assert.equal(carrierDestination(method), null);
     }
     assert.equal(carrierDestination("韵达快递 https://evil.example/phish"), null);
@@ -52,5 +66,7 @@ describe("carrier query links", () => {
     assert.equal(isAllowlistedCarrierUrl("javascript:alert(1)"), false);
     assert.equal(isAllowlistedCarrierUrl(`${YUNDA_QUERY_URL}?mailNo=${encodeURIComponent(tracking)}`), false);
     assert.equal(isAllowlistedCarrierUrl(`${ZTO_QUERY_URL}?billCode=1`), false);
+    assert.equal(isAllowlistedCarrierUrl(`${EMS_QUERY_URL}?mailNo=1`), false);
+    assert.equal(carrierDestination("中国邮政")?.href, EMS_QUERY_URL);
   });
 });

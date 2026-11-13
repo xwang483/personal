@@ -1,7 +1,7 @@
 {
   "pages": ["pages/index/index"],
   "window": {
-    "navigationBarTitleText": "订阅单号查询",
+    "navigationBarTitleText": "杂志邮寄单号查询",
     "navigationBarBackgroundColor": "#ffffff",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#ffffff",

@@ -9,20 +9,20 @@
     * { box-sizing: border-box; }
     body {
       margin: 0;
-      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
-      color: #1e1a16;
-      background: #e7dcc8;
+      font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", Tahoma, Arial, sans-serif;
+      color: #333;
+      background: #fff;
     }
     .page { max-width: 40rem; margin: 0 auto; padding: 0.85rem; }
     .banner, .sheet {
-      background: #fbf7ef;
-      border: 1px solid rgba(70, 48, 24, 0.16);
-      padding: 1rem 1.05rem;
+      background: #fff;
+      border: 1px solid #d3d3d3;
+      padding: 0;
     }
-    .banner { border-color: #8d2f2a; }
-    .banner strong { color: #8d2f2a; }
+    .banner { padding: 1rem 1.05rem; border-color: #e7b4b4; }
+    .banner strong { color: #c8161d; }
     .sheet { margin-top: 0.75rem; }
-    h1 { margin: 0.35rem 0; font-size: clamp(1.7rem, 7vw, 2.4rem); line-height: 1.15; }
+    h1 { margin: 0; padding: 6px 12px; background: #de8b21; color: #fff7d6; font-size: 16px; line-height: 1.4; }
     p { line-height: 1.65; }
     label { display: block; font-weight: 650; margin-bottom: 0.35rem; }
     input, button, a.action {
@@ -31,7 +31,7 @@
     }
     input {
       width: 100%;
-      border: 1px solid #cbbba3;
+      border: 1px solid #732808;
       background: #fff;
       padding: 0.55rem 0.7rem;
       font-size: 1rem;
@@ -42,18 +42,22 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      border: 1px solid #8d2f2a;
+      border: 1px solid #de8b21;
       text-decoration: none;
       cursor: pointer;
       padding: 0.4rem 0.7rem;
+      border-radius: 2px;
     }
-    button.primary, a.action { background: #8d2f2a; color: #fbf7ef; }
-    button.ghost { background: #fffdf9; color: #1e1a16; }
-    .card { border: 1px solid #d9cbb6; background: #fffdf9; padding: 0.85rem; margin-top: 0.7rem; }
-    .stamp { display: inline-block; border: 1px solid #8d2f2a; color: #8d2f2a; font-size: 0.75rem; letter-spacing: 0.12em; padding: 0.05rem 0.35rem; }
-    .muted { color: #5e564c; font-size: 0.88rem; }
-    .error { color: #8d2f2a; }
-    .no { font-family: ui-monospace, monospace; word-break: break-all; font-size: 1.02rem; }
+    button.primary, a.action { background: #de8b21; color: #fff7d6; }
+    button.ghost { background: #fff; color: #732808; }
+    .card { border: 1px solid #d3d3d3; background: #fff; padding: 0 0.85rem 0.85rem; margin-top: 0.7rem; }
+    .card h2 { margin: 0 -0.85rem 0.6rem; padding: 6px 12px; background: #fff7d6; font-size: 15px; }
+    .stamp { display: inline-block; border: 1px solid #de8b21; color: #c45c12; font-size: 0.75rem; letter-spacing: 0.08em; padding: 0.05rem 0.35rem; }
+    .muted { color: #666; font-size: 0.88rem; }
+    .error { color: #c8161d; }
+    .no { font-family: ui-monospace, monospace; word-break: break-all; font-size: 1.05rem; color: #e44087; font-weight: 700; }
+    form, .muted, h1 + p { margin-left: 12px; margin-right: 12px; }
+    form { padding-bottom: 12px; }
   </style>
 </head>
 <body>
@@ -96,9 +100,19 @@
       "中通": "https://www.zto.com/check",
       "中通快递": "https://www.zto.com/check",
       "中通速递": "https://www.zto.com/check",
-      "zto": "https://www.zto.com/check"
+      "zto": "https://www.zto.com/check",
+      "ems": "https://www.ems.com.cn/",
+      "中国邮政": "https://www.ems.com.cn/",
+      "中国邮政ems": "https://www.ems.com.cn/",
+      "邮政ems": "https://www.ems.com.cn/",
+      "邮政快递": "https://www.ems.com.cn/",
+      "邮政快递包裹": "https://www.ems.com.cn/"
     };
-    const NAMES = { "https://web.yundaex.com/Home": "韵达快递", "https://www.zto.com/check": "中通快递" };
+    const NAMES = {
+      "https://web.yundaex.com/Home": "韵达快递",
+      "https://www.zto.com/check": "中通快递",
+      "https://www.ems.com.cn/": "中国邮政EMS"
+    };
 
     function normalizePhone(input) {
       let raw = String(input).normalize("NFKC").trim().replace(/^[''\u2018\u2019]+/, "");
@@ -115,24 +129,20 @@
     function carrier(method) {
       const key = String(method).normalize("NFKC").trim().toLowerCase().replace(/[\s\u00A0\u3000]+/g, "");
       const href = LINKS[key];
-      if (href !== "https://web.yundaex.com/Home" && href !== "https://www.zto.com/check") return null;
+      if (href !== "https://web.yundaex.com/Home" && href !== "https://www.zto.com/check" && href !== "https://www.ems.com.cn/") return null;
       return { href, name: NAMES[href] };
     }
 
-    async function copyText(value) {
-      try {
-        if (navigator.clipboard && navigator.clipboard.writeText) {
-          await navigator.clipboard.writeText(value);
-          return true;
-        }
-      } catch (error) {}
+    function copyTextSync(value) {
       try {
         const area = document.createElement("textarea");
         area.value = value;
         area.setAttribute("readonly", "");
         area.style.position = "fixed";
-        area.style.left = "-9999px";
+        area.style.left = "0";
+        area.style.opacity = "0";
         document.body.appendChild(area);
+        area.focus();
         area.select();
         const ok = document.execCommand("copy");
         area.remove();
@@ -140,6 +150,17 @@
       } catch (error) {
         return false;
       }
+    }
+
+    async function copyText(value) {
+      if (copyTextSync(value)) return true;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(value);
+          return true;
+        }
+      } catch (error) {}
+      return false;
     }
 
     const form = document.getElementById("form");
@@ -203,9 +224,9 @@
           link.target = "_blank";
           link.rel = "noopener noreferrer";
           link.textContent = "查询物流";
-          note.dataset.base = "打开" + linkInfo.name + "官方查询页。单号不会自动填入，请粘贴后再查。";
-          link.addEventListener("click", async () => {
-            const ok = await copyText(row.trackingNumber);
+          note.dataset.base = "打开" + linkInfo.name + "官方页面。单号不会自动填入，请粘贴后再查。";
+          link.addEventListener("click", () => {
+            const ok = copyTextSync(row.trackingNumber);
             note.textContent = note.dataset.base + (ok ? " 单号已复制。" : " 没能复制单号，请在打开的页面手动输入。");
           });
           actions.appendChild(link);

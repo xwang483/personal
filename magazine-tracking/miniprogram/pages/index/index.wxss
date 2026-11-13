@@ -1,27 +1,48 @@
 .page {
-  padding: 20px 16px 32px;
+  min-height: 100vh;
+  padding: 0 0 28px;
   background: #ffffff;
+  color: #333333;
+}
+
+.brand {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  padding: 14px 12px 10px;
+}
+
+.brand-mark {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  background: #c8161d;
+  color: #ffffff;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+.brand-text {
+  flex: 1;
+}
+
+.title,
+.box-title,
+.card-title,
+.panel-title,
+.privacy-title,
+.result-head {
+  display: block;
+  color: #222222;
+  font-weight: 700;
+  line-height: 1.4;
 }
 
 .title {
-  display: block;
-  margin: 0;
-  color: #1a1a1a;
-  font-size: 22px;
-  font-weight: 650;
-  line-height: 1.35;
-}
-
-@media (min-width: 400px) {
-  .title {
-    font-size: 26px;
-  }
-}
-
-@media (min-width: 600px) {
-  .title {
-    font-size: 30px;
-  }
+  font-size: 18px;
 }
 
 .disclaimer,
@@ -31,93 +52,126 @@
 .panel-copy,
 .privacy-copy {
   display: block;
-  color: #333333;
-  font-size: 16px;
-  line-height: 1.5;
+  color: #666666;
+  font-size: 13px;
+  line-height: 1.6;
 }
 
 .disclaimer {
-  margin-top: 8px;
+  margin-top: 2px;
+}
+
+.goldbar {
+  margin: 0 12px 10px;
+  padding: 8px 10px;
+  background: #f0a429;
+  color: #ffffff;
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.box,
+.panel,
+.card,
+.banner,
+.privacy {
+  margin: 0 12px 10px;
+  border: 1px solid #d3d3d3;
+  background: #ffffff;
+}
+
+.box-title,
+.card-title {
+  padding: 0 12px;
+  height: 28px;
+  line-height: 28px;
+  background: #de8b21;
+  color: #fff7d6;
+  font-size: 14px;
+}
+
+.box-body,
+.card-body,
+.panel,
+.privacy,
+.banner {
+  padding: 12px;
 }
 
 .privacy {
-  margin-bottom: 16px;
-  padding: 16px;
-  border: 1px solid #e60012;
-  background: #ffffff;
+  border-color: #e7b4b4;
 }
 
 .privacy-title,
 .panel-title,
-.result-head,
-.card-title {
-  display: block;
-  color: #1a1a1a;
-  font-size: 18px;
-  font-weight: 650;
-  line-height: 1.4;
+.result-head {
+  font-size: 16px;
+}
+
+.result-head {
+  margin: 4px 12px 0;
 }
 
 .privacy-copy,
-.panel-copy {
+.panel-copy,
+.hint,
+.fine,
+.meta,
+.notice,
+.ok,
+.error {
   margin-top: 8px;
-}
-
-.form,
-.panel,
-.card {
-  margin-top: 16px;
 }
 
 .label,
 .fine {
   display: block;
-  margin-bottom: 8px;
-  font-weight: 650;
+  font-weight: 700;
+  color: #333333;
 }
 
 .field {
   box-sizing: border-box;
   width: 100%;
-  height: 44px;
-  padding: 0 12px;
-  border: 1px solid #cccccc;
+  height: 40px;
+  margin-top: 6px;
+  padding: 0 10px;
+  border: 1px solid #732808;
   background: #ffffff;
-  color: #1a1a1a;
+  color: #222222;
   font-size: 16px;
-}
-
-.hint,
-.fine,
-.meta {
-  margin-top: 8px;
 }
 
 .error,
 .notice,
-.ok {
-  display: block;
-  margin-top: 8px;
-  color: #e60012;
-  font-size: 16px;
-  font-weight: 650;
+.ok,
+.banner {
+  color: #c8161d;
+  font-size: 13px;
   line-height: 1.5;
 }
 
+.banner,
+.panel.bad {
+  border-color: #e7b4b4;
+  background: #fff6f6;
+}
+
 .btn {
-  min-height: 44px;
-  border-radius: 4px;
+  min-height: 40px;
+  border-radius: 2px;
+  font-size: 14px;
 }
 
 .btn.primary {
-  background: #e60012;
-  color: #ffffff;
+  background: #de8b21;
+  color: #fff7d6;
 }
 
 .btn.ghost {
   background: #ffffff;
-  color: #e60012;
-  border: 1px solid #e60012;
+  color: #732808;
+  border: 1px solid #de8b21;
 }
 
 .btn[disabled] {
@@ -137,43 +191,24 @@
 }
 
 .row .btn {
-  flex: 1 1 140px;
-}
-
-.panel,
-.card,
-.banner {
-  padding: 16px;
-  border: 1px solid #e6e6e6;
-  background: #ffffff;
-}
-
-.panel.bad,
-.banner {
-  border-color: #e60012;
-}
-
-.banner {
-  margin-top: 16px;
-  color: #e60012;
-  font-size: 16px;
+  flex: 1 1 120px;
 }
 
 .stamp {
   display: inline-block;
-  margin-bottom: 8px;
-  padding: 2px 6px;
-  border: 1px solid #e60012;
-  color: #e60012;
+  margin-top: 0;
+  padding: 0 6px;
+  border: 1px solid #de8b21;
+  color: #c45c12;
   font-size: 12px;
-  letter-spacing: 0.08em;
 }
 
 .tracking {
   display: block;
-  margin-top: 4px;
-  color: #1a1a1a;
+  margin-top: 2px;
+  color: #e44087;
   font-size: 18px;
+  font-weight: 700;
   line-height: 1.4;
   word-break: break-all;
 }

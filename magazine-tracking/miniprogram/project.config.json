@@ -1,8 +1,8 @@
 {
   "miniprogramRoot": "./",
   "projectname": "magazine-lookup",
-  "description": "杂志订阅单号查询。appid 必须换成你自己的小程序 AppID，不要提交 AppSecret。",
-  "appid": "",
+  "description": "杂志邮寄单号查询。appid 目前是微信开发者工具的测试占位 touristappid，只能本地预览。上传发布前必须换成你在微信公众平台（mp.weixin.qq.com）注册的小程序 AppID。不要把 AppSecret 写进这个文件。",
+  "appid": "touristappid",
   "compileType": "miniprogram",
   "libVersion": "3.5.5",
   "setting": {

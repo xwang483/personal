@@ -14,4 +14,4 @@ cp .env.example .env.local
 
 在 `.env.local` 里自行填写 `ADMIN_USERNAME`、`ADMIN_PASSWORD` 和 `ADMIN_SESSION_SECRET`，然后执行 `npm run dev`。读者页一般是 http://localhost:3000 ，管理人员入口是 `/admin`。示例记录都是虚构的。更完整的说明见 `magazine-tracking/README.md`。
 
-微信小程序源码在 `magazine-tracking/miniprogram/`。仓库里没有填写 AppID。把代码上传到 GitHub 不会发布小程序，也不会变成可公开访问的网站。
+微信小程序源码在 `magazine-tracking/miniprogram/`。用微信开发者工具导入该目录即可预览。`project.config.json` 里的 `touristappid` 只是占位，发布前要换成自己的 AppID，并在小程序后台配置 request 合法域名。把代码上传到 GitHub 不会发布小程序，也不会变成可公开访问的网站。运行、打开和提审的短说明在 `magazine-tracking/README.md` 的「运行网站、打开小程序、提交发布」。

@@ -1,8 +1,16 @@
 const { runtimeConfig } = require("../../config");
 const { copyTrackingNumber, handleCopyResult } = require("../../utils/clipboard");
-const { requestCarrierJump } = require("../../utils/carriers");
+const { buildCarrierById, listCarriers, requestCarrierJump } = require("../../utils/carriers");
 const { performLookup } = require("../../utils/lookup");
 const { presentShipment } = require("../../utils/present");
+
+function useClipboard(options) {
+  wx.setClipboardData(options);
+}
+
+function useJump(options) {
+  wx.navigateToMiniProgram(options);
+}
 
 Page({
   data: {
@@ -14,6 +22,8 @@ Page({
     demoWarning: "",
     showPrivacy: false,
     privacyReady: false,
+    carriers: listCarriers(),
+    carrierMessage: "",
   },
 
   onLoad() {
@@ -64,6 +74,7 @@ Page({
       shipments: [],
       truncated: false,
       demoWarning: "",
+      carrierMessage: "",
     });
     performLookup({
       config: runtimeConfig,
@@ -92,13 +103,25 @@ Page({
     });
   },
 
+  jump(plan, trackingNumber, apply) {
+    requestCarrierJump({
+      plan,
+      userTap: true,
+      trackingNumber,
+      setClipboardData: useClipboard,
+      navigateToMiniProgram: useJump,
+    }).then((result) => {
+      apply(result);
+    });
+  },
+
   onCopy(event) {
     const index = Number(event.currentTarget.dataset.index);
     const shipment = this.data.shipments[index];
     if (!shipment) return;
     copyTrackingNumber({
       trackingNumber: shipment.trackingNumber,
-      setClipboardData: (options) => wx.setClipboardData(options),
+      setClipboardData: useClipboard,
     }).then((result) => {
       const view = handleCopyResult(result);
       this.setData({
@@ -112,15 +135,20 @@ Page({
     const index = Number(event.currentTarget.dataset.index);
     const shipment = this.data.shipments[index];
     if (!shipment) return;
-    requestCarrierJump({
-      plan: shipment.jump,
-      userTap: true,
-      navigateToMiniProgram: (options) => wx.navigateToMiniProgram(options),
-    }).then((result) => {
+    this.jump(shipment.jump, shipment.trackingNumber, (result) => {
       this.setData({
         [`shipments[${index}].jumpState`]: result.status,
         [`shipments[${index}].jumpMessage`]: result.message,
       });
+    });
+  },
+
+  onOpenCarrier(event) {
+    const carrierId = event.currentTarget.dataset.id;
+    const plan = buildCarrierById(carrierId);
+    const match = (this.data.shipments || []).find((item) => item.jump && item.jump.carrierId === carrierId);
+    this.jump(plan, match ? match.trackingNumber : "", (result) => {
+      this.setData({ carrierMessage: result.message });
     });
   },
 });
